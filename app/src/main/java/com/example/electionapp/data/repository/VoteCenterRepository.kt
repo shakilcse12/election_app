@@ -12,6 +12,10 @@ class VoteCenterRepository(
 
     val centers: Flow<List<VoteCenterEntity>> = dao.getAllCenters()
 
+    suspend fun getCenterById(id: Int): VoteCenterEntity? {
+        return dao.getCenterById(id)
+    }
+
     suspend fun insertDummyDataIfEmpty() {
         if (dao.getAllCenters().first().isEmpty()) {
             dao.insertAll(DummyData.voteCenters())

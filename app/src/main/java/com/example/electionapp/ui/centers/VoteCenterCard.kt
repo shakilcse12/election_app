@@ -2,6 +2,7 @@ package com.example.electionapp.ui.centers
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
@@ -15,11 +16,16 @@ import androidx.compose.ui.unit.dp
 import com.example.electionapp.data.local.VoteCenterEntity
 
 @Composable
-fun VoteCenterCard(center: VoteCenterEntity) {
+fun VoteCenterCard(
+    center: VoteCenterEntity,
+    onClick: () -> Unit
+) {
     val context = LocalContext.current
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -35,27 +41,22 @@ fun VoteCenterCard(center: VoteCenterEntity) {
                 )
 
                 IconButton(onClick = {
-                    val intent = Intent(
-                        Intent.ACTION_DIAL,
-                        Uri.parse("tel:${center.presidingOfficerPhone}")
+                    context.startActivity(
+                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:${center.presidingOfficerPhone}"))
                     )
-                    context.startActivity(intent)
                 }) {
-                    Icon(Icons.Default.Call, contentDescription = "Call")
+                    Icon(Icons.Default.Call, null)
                 }
 
                 IconButton(onClick = {
-                    val uri = Uri.parse(
-                        "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}"
-                    )
+                    val uri = Uri.parse("geo:${center.latitude},${center.longitude}")
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 }) {
-                    Icon(Icons.Default.LocationOn, contentDescription = "Map")
+                    Icon(Icons.Default.LocationOn, null)
                 }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
-
             Text("Presiding Officer: ${center.presidingOfficerName}")
             Spacer(modifier = Modifier.height(4.dp))
             Text(center.address, style = MaterialTheme.typography.bodySmall)
