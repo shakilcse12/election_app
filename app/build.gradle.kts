@@ -2,13 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)  // Add this
+    alias(libs.plugins.hilt.android)
     kotlin("kapt") // ✅ THIS FIXES kapt()
 }
 
 android {
     namespace = "com.example.electionapp"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.electionapp"
@@ -68,6 +68,9 @@ dependencies {
     /* ---------------- Room (Local DB) ---------------- */
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.material)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
     kapt(libs.androidx.room.compiler)  // This should work now
 
     /* ---------------- Dependency Injection (Hilt) ---------------- */
