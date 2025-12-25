@@ -3,13 +3,20 @@ package com.example.electionapp.ui.main
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.*
-import com.example.electionapp.ui.navigation.*
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.electionapp.ui.navigation.BottomNavItem
+import com.example.electionapp.ui.navigation.AppNavGraph
+import androidx.compose.foundation.layout.padding
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val items = listOf(
+
+    val bottomNavItems = listOf(
         BottomNavItem.Centers,
         BottomNavItem.Map,
         BottomNavItem.Law
@@ -18,27 +25,26 @@ fun MainScreen() {
     Scaffold(
         bottomBar = {
             NavigationBar {
-                val currentRoute =
-                    navController.currentBackStackEntryAsState().value?.destination?.route
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
 
-                items.forEach { item ->
+                bottomNavItems.forEach { item ->
                     NavigationBarItem(
+                        icon = { androidx.compose.material3.Icon(item.icon, contentDescription = item.label) },
+                        label = { androidx.compose.material3.Text(item.label) },
                         selected = currentRoute == item.route,
                         onClick = {
                             navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId)
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
+                                restoreState = true
                             }
-                        },
-                        icon = { Icon(item.icon, null) },
-                        label = { Text(item.label) }
+                        }
                     )
                 }
             }
         }
-    ) { padding ->
-        AppNavGraph(
-            navController = navController
-        )
+    ) { innerPadding ->
+        AppNavGraph(navController = navController, modifier = Modifier.padding(innerPadding))
     }
 }

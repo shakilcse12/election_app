@@ -3,13 +3,12 @@ package com.example.electionapp.di
 import android.content.Context
 import androidx.room.Room
 import com.example.electionapp.data.local.AppDatabase
-import com.example.electionapp.data.local.VoteCenterDao
-import com.example.electionapp.data.repository.VoteCenterRepository
+import com.example.electionapp.data.local.dao.VoteCenterDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Singleton
 
 @Module
@@ -19,21 +18,18 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(
-        @ApplicationContext context: Context
-    ): AppDatabase =
-        Room.databaseBuilder(
-            context,
+        @ApplicationContext appContext: Context
+    ): AppDatabase {
+        return Room.databaseBuilder(
+            appContext,
             AppDatabase::class.java,
-            "election_db"
+            "election_database"
         ).build()
+    }
 
     @Provides
-    fun provideVoteCenterDao(db: AppDatabase): VoteCenterDao =
-        db.voteCenterDao()
-
-    @Provides
-    fun provideRepository(
-        dao: VoteCenterDao
-    ): VoteCenterRepository =
-        VoteCenterRepository(dao)
+    @Singleton
+    fun provideVoteCenterDao(db: AppDatabase): VoteCenterDao {
+        return db.voteCenterDao()
+    }
 }

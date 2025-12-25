@@ -1,0 +1,30 @@
+package com.example.electionapp.data.local.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import com.example.electionapp.data.local.entity.VoteCenterEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface VoteCenterDao {
+
+    @Query("SELECT * FROM vote_centers ORDER BY centerNumber ASC")
+    fun getAllCenters(): Flow<List<VoteCenterEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(centers: List<VoteCenterEntity>)
+
+    @Query("DELETE FROM vote_centers")
+    suspend fun clearAll()
+
+    @Query("""
+    SELECT * FROM vote_centers
+    WHERE presidingOfficerName LIKE :query
+       OR address LIKE :query
+       OR centerNumber LIKE :query
+    ORDER BY centerNumber ASC
+""")
+    fun searchCenters(query: String): Flow<List<VoteCenterEntity>>
+}

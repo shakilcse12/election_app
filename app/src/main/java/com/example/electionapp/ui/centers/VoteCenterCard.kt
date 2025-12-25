@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.electionapp.data.local.VoteCenterEntity
+import com.example.electionapp.data.local.entity.VoteCenterEntity
 
 @Composable
 fun VoteCenterCard(
@@ -41,25 +41,38 @@ fun VoteCenterCard(
                 )
 
                 IconButton(onClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:${center.presidingOfficerPhone}"))
+                    val dialIntent = Intent(
+                        Intent.ACTION_DIAL,
+                        Uri.parse("tel:${center.presidingOfficerPhone}")
                     )
+                    context.startActivity(dialIntent)
                 }) {
-                    Icon(Icons.Default.Call, null)
+                    Icon(Icons.Default.Call, contentDescription = "Call Presiding Officer")
                 }
 
                 IconButton(onClick = {
-                    val uri = Uri.parse("geo:${center.latitude},${center.longitude}")
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    val mapUri = Uri.parse(
+                        "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}(Vote Center ${center.centerNumber})"
+                    )
+                    context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
                 }) {
-                    Icon(Icons.Default.LocationOn, null)
+                    Icon(Icons.Default.LocationOn, contentDescription = "Open Map")
                 }
             }
 
             Spacer(modifier = Modifier.height(6.dp))
-            Text("Presiding Officer: ${center.presidingOfficerName}")
+
+            Text(
+                text = "Presiding Officer: ${center.presidingOfficerName}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
             Spacer(modifier = Modifier.height(4.dp))
-            Text(center.address, style = MaterialTheme.typography.bodySmall)
+
+            Text(
+                text = center.address,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
     }
 }

@@ -12,20 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
 fun VoteCenterDetailsScreen(
+    centerId: Int,
     viewModel: VoteCenterViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val backStackEntry = rememberNavController().currentBackStackEntryAsState()
-    val id = backStackEntry.value?.arguments?.getInt("id")
 
-    LaunchedEffect(id) {
-        id?.let { viewModel.loadCenterById(it) }
+    LaunchedEffect(centerId) {
+        viewModel.loadCenterById(centerId)
     }
 
     val center by viewModel.selectedCenter.collectAsState()
@@ -37,27 +33,20 @@ fun VoteCenterDetailsScreen(
                 .padding(16.dp)
         ) {
 
-            Text(
-                "Vote Center ${it.centerNumber}",
-                style = MaterialTheme.typography.headlineSmall
-            )
-
+            Text("Vote Center ${it.centerNumber}", style = MaterialTheme.typography.headlineSmall)
             Spacer(modifier = Modifier.height(12.dp))
             Text("Presiding Officer: ${it.presidingOfficerName}")
             Text("Other Officers: ${it.otherOfficers}")
             Spacer(modifier = Modifier.height(8.dp))
             Text("Address:")
             Text(it.address)
-
             Spacer(modifier = Modifier.height(16.dp))
 
             Row {
                 Button(onClick = {
-                    context.startActivity(
-                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:${it.presidingOfficerPhone}"))
-                    )
+                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${it.presidingOfficerPhone}")))
                 }) {
-                    Icon(Icons.Default.Call, null)
+                    Icon(Icons.Default.Call, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Call Officer")
                 }
@@ -68,7 +57,7 @@ fun VoteCenterDetailsScreen(
                     val uri = Uri.parse("geo:${it.latitude},${it.longitude}")
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 }) {
-                    Icon(Icons.Default.LocationOn, null)
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Open Map")
                 }
