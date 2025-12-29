@@ -3,45 +3,89 @@ package com.example.electionapp.ui.centers
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.electionapp.ui.centers.VoteCenterCard
-import com.example.electionapp.ui.centers.VoteCenterViewModel
 import com.example.electionapp.ui.components.SearchBar
-import com.example.electionapp.util.DummyData
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoteCenterListScreen(
-    viewModel: VoteCenterViewModel = hiltViewModel(),
-    onCenterClick: (Int) -> Unit
+    onCenterClick: (Int) -> Unit,
+    onAdminLoginClick: () -> Unit,
+    viewModel: VoteCenterViewModel = hiltViewModel()
 ) {
-    // Insert dummy data once
-    LaunchedEffect(Unit) {
-        viewModel.insertDummyData(DummyData.voteCenters())
-    }
-
     val voteCenters by viewModel.voteCenters.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        item {
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = viewModel::onSearchChange
+    var showMenu by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Vote Centers") },
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Admin Login") },
+                            onClick = {
+                                showMenu = false
+                                onAdminLoginClick()
+                            }
+                        )
+                    }
+                }
             )
         }
+    ) { paddingValues ->
 
-        items(voteCenters) { center ->
-            VoteCenterCard(
-                center = center,
-                onClick = { onCenterClick(center.id) }
-            )
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            item {
+                SearchBar(
+                    query = searchQuery,
+                    onQueryChange = viewModel::onSearchChange
+                )
+            }
+
+            if (voteCenters.isEmpty()) {
+                item {
+                    Text(
+                        text = "No vote centers found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                items(
+                    items = voteCenters,
+                    key = { it.id }
+                ) { center ->
+                    VoteCenterCard(
+                        center = center,
+                        onClick = {
+                            onCenterClick(center.id)
+                        }
+                    )
+                }
+            }
         }
     }
 }

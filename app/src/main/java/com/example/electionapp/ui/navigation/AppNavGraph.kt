@@ -26,6 +26,9 @@ fun AppNavGraph(
             VoteCenterListScreen(
                 onCenterClick = { centerId ->
                     navController.navigate("details/$centerId")
+                },
+                onAdminLoginClick = {
+                    navController.navigate("login")
                 }
             )
         }
