@@ -2,11 +2,15 @@ package com.example.electionapp.ui.centers
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,11 +32,12 @@ fun VoteCenterCard(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            // Top row: Vote Center # + Call Icon
+            /* ---------------- Top Row ---------------- */
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -40,51 +45,81 @@ fun VoteCenterCard(
                 Text(
                     text = "Vote Center ${center.centerNumber}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF2E7D32), // Green for center number
+                    color = Color(0xFF2E7D32), // Green
                     modifier = Modifier.weight(1f)
                 )
 
                 IconButton(onClick = {
-                    val dialIntent = Intent(
-                        Intent.ACTION_DIAL,
-                        Uri.parse("tel:${center.presidingOfficerPhone}")
+                    context.startActivity(
+                        Intent(
+                            Intent.ACTION_DIAL,
+                            Uri.parse("tel:${center.presidingOfficerPhone}")
+                        )
                     )
-                    context.startActivity(dialIntent)
                 }) {
                     Icon(
-                        Icons.Default.Call,
+                        imageVector = Icons.Default.Call,
                         contentDescription = "Call Presiding Officer",
-                        tint = Color(0xFF1976D2) // Blue for call icon
+                        tint = Color(0xFF1976D2) // Blue
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // Bottom row: Text details on left, Map icon bottom-right
+            /* ---------------- Bottom Content ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom
             ) {
-                // Left Column: Presiding Officer, Other Officers, Address
+
+                /* -------- Left Column (Details) -------- */
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Presiding Officer: ${center.presidingOfficerName}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Presiding Officer Row with Profile Placeholder
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(
+                                    color = Color(0xFFE0E0E0),
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Officer",
+                                tint = Color(0xFF616161)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Text(
+                            text = center.presidingOfficerName,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = "Other Officers: ${center.otherOfficers}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodySmall
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
                     Text(
                         text = center.address,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF424242)
                     )
                 }
 
-                // Right Column: Map icon
+                /* -------- Map Icon (Bottom Right) -------- */
                 IconButton(
                     onClick = {
                         val mapUri = Uri.parse(
@@ -92,12 +127,14 @@ fun VoteCenterCard(
                         )
                         context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
                     },
-                    modifier = Modifier.align(Alignment.Bottom)
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .align(Alignment.Bottom)
                 ) {
                     Icon(
-                        Icons.Default.LocationOn,
+                        imageVector = Icons.Default.LocationOn,
                         contentDescription = "Open Map",
-                        tint = Color(0xFFD32F2F) // Red for map icon
+                        tint = Color(0xFFD32F2F) // Red
                     )
                 }
             }
