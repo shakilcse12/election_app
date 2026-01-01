@@ -19,6 +19,9 @@ interface VoteCenterDao {
     @Query("DELETE FROM vote_centers")
     suspend fun clearAll()
 
+    @Query("SELECT * FROM vote_centers WHERE id = :id")
+    suspend fun getById(id: Int): VoteCenterEntity?
+
     @Query("""
     SELECT * FROM vote_centers
     WHERE presidingOfficerName LIKE :query
@@ -27,4 +30,6 @@ interface VoteCenterDao {
     ORDER BY centerNumber ASC
 """)
     fun searchCenters(query: String): Flow<List<VoteCenterEntity>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(center: VoteCenterEntity)
 }

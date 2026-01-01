@@ -33,4 +33,7 @@ class VoteCenterRepository @Inject constructor(
     suspend fun insertAll(centers: List<VoteCenterEntity>) = dao.insertAll(centers)
 
     suspend fun clearAll() = dao.clearAll()
+
+    suspend fun getCenter(id: Int) = dao.getById(id)
+    suspend fun save(center: VoteCenterEntity) = dao.insert(center)
 }
