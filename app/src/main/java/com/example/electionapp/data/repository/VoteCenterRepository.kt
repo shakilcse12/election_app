@@ -20,6 +20,8 @@ class VoteCenterRepository @Inject constructor(
         }
     }
 
+    fun getAllCenters(): Flow<List<VoteCenterEntity>> = dao.getAll()
+
     // Insert dummy or new data
     suspend fun insertCenters(centers: List<VoteCenterEntity>) {
         dao.insertAll(centers)
@@ -36,4 +38,5 @@ class VoteCenterRepository @Inject constructor(
 
     suspend fun getCenter(id: Int) = dao.getById(id)
     suspend fun save(center: VoteCenterEntity) = dao.insert(center)
+    suspend fun getById(id: Int): VoteCenterEntity = dao.getById(id)!!
 }

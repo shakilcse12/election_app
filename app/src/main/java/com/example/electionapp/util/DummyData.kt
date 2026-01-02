@@ -7,6 +7,7 @@ object DummyData {
         VoteCenterEntity(
             id = 1,
             centerNumber = 56,
+            centerName = "Kali hati center",
             presidingOfficerName = "Md. Rahman",
             presidingOfficerPhone = "01700000000",
             otherOfficers = "Officer A, Officer B",
@@ -17,6 +18,7 @@ object DummyData {
         VoteCenterEntity(
             id = 2,
             centerNumber = 57,
+            centerName = "South bagan Center",
             presidingOfficerName = "Ms. Sultana",
             presidingOfficerPhone = "01800000000",
             otherOfficers = "Officer C, Officer D",

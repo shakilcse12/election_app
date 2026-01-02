@@ -22,6 +22,8 @@ constraintlayout = "2.2.1"
 navigationFragmentKtx = "2.9.6"
 navigationUiKtx = "2.9.6"
 datastore = "1.1.1"
+mapsCompose = "2.11.4"
+playServicesMaps = "18.2.0"
 
 [libraries]
 # Core Android
@@ -60,6 +62,11 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
 
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
+#maps
+google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
+
+google-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 
 
 # Test dependencies (unchanged)

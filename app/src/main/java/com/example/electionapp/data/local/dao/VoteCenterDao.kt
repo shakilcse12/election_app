@@ -32,4 +32,7 @@ interface VoteCenterDao {
     fun searchCenters(query: String): Flow<List<VoteCenterEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(center: VoteCenterEntity)
+
+    @Query("SELECT * FROM vote_centers ORDER BY centerNumber ASC")
+    fun getAll(): Flow<List<VoteCenterEntity>>
 }

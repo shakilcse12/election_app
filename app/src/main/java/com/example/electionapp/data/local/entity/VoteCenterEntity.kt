@@ -9,6 +9,7 @@ data class VoteCenterEntity(
     val id: Int = 0,
 
     val centerNumber: Int,
+    val centerName: String,
     val presidingOfficerName: String,
     val presidingOfficerPhone: String,
     val otherOfficers: String,

@@ -1,13 +1,12 @@
 package com.example.electionapp.ui.admin
 
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electionapp.data.local.entity.VoteCenterEntity
 import com.example.electionapp.data.repository.VoteCenterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,10 +15,10 @@ class AdminViewModel @Inject constructor(
     private val repository: VoteCenterRepository
 ) : ViewModel() {
 
-    var uiState by mutableStateOf(
+    var uiState = mutableStateOf(
         VoteCenterEntity(
-            id = 0,
             centerNumber = 0,
+            centerName = "",
             presidingOfficerName = "",
             presidingOfficerPhone = "",
             otherOfficers = "",
@@ -30,27 +29,24 @@ class AdminViewModel @Inject constructor(
     )
         private set
 
-    // New function to fetch all centers as Flow
-    fun getAllCenters() = repository.getVoteCenters(query = "")
+    fun getAllCenters(): Flow<List<VoteCenterEntity>> =
+        repository.getAllCenters()
 
     fun load(id: Int?) {
         if (id == null) return
         viewModelScope.launch {
-            repository.getCenter(id)?.let {
-                uiState = it
-            }
+            uiState.value = repository.getById(id)
         }
     }
 
-    fun update(field: (VoteCenterEntity) -> VoteCenterEntity) {
-        uiState = field(uiState)
+    fun update(block: (VoteCenterEntity) -> VoteCenterEntity) {
+        uiState.value = block(uiState.value)
     }
 
     fun save(onDone: () -> Unit) {
         viewModelScope.launch {
-            repository.save(uiState)
+            repository.save(uiState.value)
             onDone()
         }
     }
 }
-
