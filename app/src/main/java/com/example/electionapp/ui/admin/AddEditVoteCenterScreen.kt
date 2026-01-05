@@ -1,13 +1,18 @@
 package com.example.electionapp.ui.admin
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditVoteCenterScreen(
     centerId: Int?,
@@ -16,119 +21,130 @@ fun AddEditVoteCenterScreen(
 ) {
     var showMap by remember { mutableStateOf(false) }
     val state = viewModel.uiState.value
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(centerId) {
         viewModel.load(centerId)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-
-        Text(
-            text = if (centerId == null) "Add Vote Center" else "Edit Vote Center",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        /* ---------- CENTER NUMBER ---------- */
-        OutlinedTextField(
-            value = state.centerNumber.toString(),
-            onValueChange = { value ->
-                viewModel.update { current ->
-                    current.copy(centerNumber = value.toIntOrNull() ?: 0)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(if (centerId == null) "Add Vote Center" else "Edit Vote Center")
+                },
+                navigationIcon = {
+                    IconButton(onClick = onDone) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
                 }
-            },
-            label = { Text("Center Number") },
-            //keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        /* ---------- CENTER NAME ---------- */
-        OutlinedTextField(
-            value = state.centerName,
-            onValueChange = { value ->
-                viewModel.update { current ->
-                    current.copy(centerName = value)
+            )
+        },
+        floatingActionButton = {
+            // Keyboard-safe FAB
+            Box(
+                modifier = Modifier
+                    .padding(WindowInsets.ime.asPaddingValues()) // moves FAB above keyboard
+                    .navigationBarsPadding() // avoids nav bar overlap
+            ) {
+                FloatingActionButton(onClick = { viewModel.save(onDone) }) {
+                    Icon(Icons.Default.Check, contentDescription = "Save Center")
                 }
-            },
-            label = { Text("Center Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        /* ---------- PRESIDING OFFICER NAME ---------- */
-        OutlinedTextField(
-            value = state.presidingOfficerName,
-            onValueChange = { value ->
-                viewModel.update { current ->
-                    current.copy(presidingOfficerName = value)
-                }
-            },
-            label = { Text("Presiding Officer Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        /* ---------- PRESIDING OFFICER PHONE ---------- */
-        OutlinedTextField(
-            value = state.presidingOfficerPhone,
-            onValueChange = { value ->
-                viewModel.update { current ->
-                    current.copy(presidingOfficerPhone = value)
-                }
-            },
-            label = { Text("Presiding Officer Phone") },
-            //keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        /* ---------- ADDRESS ---------- */
-        OutlinedTextField(
-            value = state.address,
-            onValueChange = { value ->
-                viewModel.update { current ->
-                    current.copy(address = value)
-                }
-            },
-            label = { Text("Vote Center Address") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        /* ---------- MAP PICKER ---------- */
-        Button(
-            onClick = { showMap = true },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Pick Location on Map")
+            }
         }
+    ) { paddingValues ->
 
-        Text(
-            text = "Latitude: ${state.latitude}",
-            style = MaterialTheme.typography.bodySmall
-        )
-
-        Text(
-            text = "Longitude: ${state.longitude}",
-            style = MaterialTheme.typography.bodySmall
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        /* ---------- SAVE ---------- */
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { viewModel.save(onDone) }
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(scrollState)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Save Center")
+
+            /* ---------- CENTER NUMBER ---------- */
+            OutlinedTextField(
+                value = state.centerNumber.toString(),
+                onValueChange = { input ->
+                    viewModel.update { current ->
+                        current.copy(centerNumber = input.toIntOrNull() ?: 0)
+                    }
+                },
+                label = { Text("Center Number") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            /* ---------- CENTER NAME ---------- */
+            OutlinedTextField(
+                value = state.centerName,
+                onValueChange = { input ->
+                    viewModel.update { current ->
+                        current.copy(centerName = input)
+                    }
+                },
+                label = { Text("Center Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            /* ---------- PRESIDING OFFICER ---------- */
+            OutlinedTextField(
+                value = state.presidingOfficerName,
+                onValueChange = { input ->
+                    viewModel.update { current ->
+                        current.copy(presidingOfficerName = input)
+                    }
+                },
+                label = { Text("Presiding Officer Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = state.presidingOfficerPhone,
+                onValueChange = { input ->
+                    viewModel.update { current ->
+                        current.copy(presidingOfficerPhone = input)
+                    }
+                },
+                label = { Text("Presiding Officer Phone") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            /* ---------- ADDRESS ---------- */
+            OutlinedTextField(
+                value = state.address,
+                onValueChange = { input ->
+                    viewModel.update { current ->
+                        current.copy(address = input)
+                    }
+                },
+                label = { Text("Vote Center Address") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
+
+            /* ---------- MAP PICKER ---------- */
+            Button(
+                onClick = { showMap = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Pick Location on Map")
+            }
+
+            Text("Latitude: ${state.latitude}")
+            Text("Longitude: ${state.longitude}")
+
+            //Spacer(modifier = Modifier.height(80.dp)) // extra space for FAB
         }
     }
 
+    // Map Picker dialog/screen
     if (showMap) {
         MapPickerScreen { lat, lng ->
-            viewModel.update { current ->
-                current.copy(latitude = lat, longitude = lng)
-            }
+            viewModel.update { it.copy(latitude = lat, longitude = lng) }
             showMap = false
         }
     }
