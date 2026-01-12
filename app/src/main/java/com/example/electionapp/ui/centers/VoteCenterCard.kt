@@ -37,107 +37,104 @@ fun VoteCenterCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
 
-            /* ---------------- Top Row ---------------- */
+            /* ---------------- TOP ROW ---------------- */
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Vote Center ${center.centerNumber}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF2E7D32), // Green
+                    color = Color(0xFF2E7D32),
                     modifier = Modifier.weight(1f)
                 )
 
-                IconButton(onClick = {
-                    context.startActivity(
-                        Intent(
-                            Intent.ACTION_DIAL,
-                            Uri.parse("tel:${center.presidingOfficerPhone}")
-                        )
-                    )
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Call,
-                        contentDescription = "Call Presiding Officer",
-                        tint = Color(0xFF1976D2) // Blue
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            /* ---------------- Bottom Content ---------------- */
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom
-            ) {
-
-                /* -------- Left Column (Details) -------- */
-                Column(modifier = Modifier.weight(1f)) {
-
-                    // Presiding Officer Row with Profile Placeholder
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(
-                                    color = Color(0xFFE0E0E0),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Officer",
-                                tint = Color(0xFF616161)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        Text(
-                            text = center.presidingOfficerName,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = "Other Officers: ${center.otherOfficers}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = center.address,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF424242)
-                    )
-                }
-
-                /* -------- Map Icon (Bottom Right) -------- */
+                /* MAP ICON — right of center name */
                 IconButton(
                     onClick = {
                         val mapUri = Uri.parse(
                             "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}(Vote Center ${center.centerNumber})"
                         )
                         context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
-                    },
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .align(Alignment.Bottom)
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = "Open Map",
-                        tint = Color(0xFFD32F2F) // Red
+                        tint = Color(0xFFD32F2F)
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            /* ---------------- PRESIDING OFFICER ROW ---------------- */
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                color = Color(0xFFE0E0E0),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Officer",
+                            tint = Color(0xFF616161)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = center.presidingOfficerName,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                /* CALL ICON — right of officer name */
+                IconButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(
+                                Intent.ACTION_DIAL,
+                                Uri.parse("tel:${center.presidingOfficerPhone}")
+                            )
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Call,
+                        contentDescription = "Call Presiding Officer",
+                        tint = Color(0xFF1976D2)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Other Officers: ${center.otherOfficers}",
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = center.address,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF424242)
+            )
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.components.SearchBar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +24,22 @@ fun VoteCenterListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     var showMenu by remember { mutableStateOf(false) }
+
+    /* ✅ EXTENDED search – NOTHING removed */
+    val filteredCenters = remember(voteCenters, searchQuery) {
+        if (searchQuery.isBlank()) {
+            voteCenters
+        } else {
+            val query = searchQuery.lowercase(Locale.getDefault())
+
+            voteCenters.filter { center ->
+                center.centerName.lowercase(Locale.getDefault()).contains(query) ||   // ✅ NEW
+                        center.centerNumber.toString().contains(query) ||                      // existing
+                        center.presidingOfficerName.lowercase(Locale.getDefault()).contains(query) ||
+                        center.address.lowercase(Locale.getDefault()).contains(query)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -58,6 +75,7 @@ fun VoteCenterListScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
+            /* ---------- SEARCH ---------- */
             item {
                 SearchBar(
                     query = searchQuery,
@@ -65,7 +83,8 @@ fun VoteCenterListScreen(
                 )
             }
 
-            if (voteCenters.isEmpty()) {
+            /* ---------- RESULTS ---------- */
+            if (filteredCenters.isEmpty()) {
                 item {
                     Text(
                         text = "No vote centers found",
@@ -75,7 +94,7 @@ fun VoteCenterListScreen(
                 }
             } else {
                 items(
-                    items = voteCenters,
+                    items = filteredCenters,
                     key = { it.id }
                 ) { center ->
                     VoteCenterCard(
