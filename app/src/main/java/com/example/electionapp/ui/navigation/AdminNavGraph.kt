@@ -35,7 +35,7 @@ fun AdminNavGraph(
                 topBar = {
                     AdminTopBar(onLogout = onLogout)
                 }
-            ) { padding ->
+            ) { padding, snackbarHostState ->   // ✅ FIX HERE
                 AdminDashboardScreen(
                     modifier = Modifier.padding(padding),
                     onAddClick = {
@@ -51,22 +51,19 @@ fun AdminNavGraph(
         /* ---------------- LAW TAB (WITH BOTTOM NAV) ---------------- */
         composable("admin/law") {
             AdminScaffold(
-                selectedIndex = 1,
+                selectedIndex = 2,
                 onDashboard = {
                     navController.navigate("admin/dashboard") {
                         popUpTo("admin/dashboard") { inclusive = true }
                     }
                 },
-                onAdd = {
-                    navController.navigate("admin/add")
-                },
+                onAdd = { navController.navigate("admin/add") },
                 onLaw = { /* already here */ },
                 topBar = {
                     AdminTopBar(onLogout = onLogout)
                 }
-            ) { padding ->
-                LawPlaceholderScreen(
-                )
+            ) { padding, snackbarHostState ->   // ✅ FIX HERE
+                LawPlaceholderScreen()
             }
         }
 

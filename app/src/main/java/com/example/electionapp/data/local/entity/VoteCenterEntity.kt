@@ -16,5 +16,7 @@ data class VoteCenterEntity(
     val address: String,
 
     val latitude: Double,
-    val longitude: Double
+    val longitude: Double,
+
+    val isSaving: Boolean = false
 )

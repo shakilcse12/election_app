@@ -9,8 +9,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,15 +22,44 @@ fun AddEditVoteCenterScreen(
     onDone: () -> Unit,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    var showMap by remember { mutableStateOf(false) }
-    val state = viewModel.uiState.value
+    val state = viewModel.uiState
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    var showMap by remember { mutableStateOf(false) }
+    var attemptedSave by remember { mutableStateOf(false) }
 
     LaunchedEffect(centerId) {
         viewModel.load(centerId)
     }
 
+    /* ---------------- Validation ---------------- */
+
+    val centerNumberError =
+        attemptedSave && state.centerNumber <= 0
+
+    val centerNameError =
+        attemptedSave && state.centerName.isBlank()
+
+    val officerNameError =
+        attemptedSave && state.presidingOfficerName.isBlank()
+
+    val phoneError =
+        attemptedSave && state.presidingOfficerPhone.length < 6
+
+    val addressError =
+        attemptedSave && state.address.isBlank()
+
+    val hasErrors =
+        centerNumberError ||
+                centerNameError ||
+                officerNameError ||
+                phoneError ||
+                addressError
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -44,14 +76,53 @@ fun AddEditVoteCenterScreen(
             )
         },
         floatingActionButton = {
-            // Keyboard-safe FAB
             Box(
                 modifier = Modifier
-                    .padding(WindowInsets.ime.asPaddingValues()) // moves FAB above keyboard
-                    .navigationBarsPadding() // avoids nav bar overlap
+                    .padding(WindowInsets.ime.asPaddingValues())
+                    .navigationBarsPadding()
             ) {
-                FloatingActionButton(onClick = { viewModel.save(onDone) }) {
-                    Icon(Icons.Default.Check, contentDescription = "Save Center")
+                FloatingActionButton(
+                    onClick = {
+                        if (state.isSaving) return@FloatingActionButton
+
+                        attemptedSave = true
+
+                        if (hasErrors) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "Please fix the highlighted errors"
+                                )
+                            }
+                            return@FloatingActionButton
+                        }
+
+                        viewModel.save(
+                            onSuccess = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Vote center saved successfully"
+                                    )
+                                }
+                                onDone()
+                            },
+                            onError = {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Failed to save vote center"
+                                    )
+                                }
+                            }
+                        )
+                    }
+                ) {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    } else {
+                        Icon(Icons.Default.Check, contentDescription = "Save Center")
+                    }
                 }
             }
         }
@@ -68,62 +139,94 @@ fun AddEditVoteCenterScreen(
 
             /* ---------- CENTER NUMBER ---------- */
             OutlinedTextField(
-                value = state.centerNumber.toString(),
+                value = if (state.centerNumber == 0) "" else state.centerNumber.toString(),
                 onValueChange = { input ->
-                    viewModel.update { current ->
-                        current.copy(centerNumber = input.toIntOrNull() ?: 0)
+                    viewModel.update {
+                        it.copy(centerNumber = input.toIntOrNull() ?: 0)
                     }
                 },
                 label = { Text("Center Number") },
+                isError = centerNumberError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                supportingText = {
+                    if (centerNumberError) {
+                        Text("Center number must be greater than 0")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             /* ---------- CENTER NAME ---------- */
             OutlinedTextField(
                 value = state.centerName,
-                onValueChange = { input ->
+                onValueChange = {
                     viewModel.update { current ->
-                        current.copy(centerName = input)
+                        current.copy(centerName = it)
                     }
                 },
                 label = { Text("Center Name") },
+                isError = centerNameError,
+                supportingText = {
+                    if (centerNameError) {
+                        Text("Center name is required")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             /* ---------- PRESIDING OFFICER ---------- */
             OutlinedTextField(
                 value = state.presidingOfficerName,
-                onValueChange = { input ->
+                onValueChange = {
                     viewModel.update { current ->
-                        current.copy(presidingOfficerName = input)
+                        current.copy(presidingOfficerName = it)
                     }
                 },
                 label = { Text("Presiding Officer Name") },
+                isError = officerNameError,
+                supportingText = {
+                    if (officerNameError) {
+                        Text("Officer name is required")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = state.presidingOfficerPhone,
-                onValueChange = { input ->
+                onValueChange = {
                     viewModel.update { current ->
-                        current.copy(presidingOfficerPhone = input)
+                        current.copy(presidingOfficerPhone = it)
                     }
                 },
                 label = { Text("Presiding Officer Phone") },
+                isError = phoneError,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                supportingText = {
+                    if (phoneError) {
+                        Text("Enter a valid phone number")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             /* ---------- ADDRESS ---------- */
             OutlinedTextField(
                 value = state.address,
-                onValueChange = { input ->
+                onValueChange = {
                     viewModel.update { current ->
-                        current.copy(address = input)
+                        current.copy(address = it)
                     }
                 },
                 label = { Text("Vote Center Address") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2
+                isError = addressError,
+                supportingText = {
+                    if (addressError) {
+                        Text("Address is required")
+                    }
+                },
+                minLines = 2,
+                modifier = Modifier.fillMaxWidth()
             )
 
             /* ---------- MAP PICKER ---------- */
@@ -136,15 +239,15 @@ fun AddEditVoteCenterScreen(
 
             Text("Latitude: ${state.latitude}")
             Text("Longitude: ${state.longitude}")
-
-            //Spacer(modifier = Modifier.height(80.dp)) // extra space for FAB
         }
     }
 
-    // Map Picker dialog/screen
+    /* ---------- MAP PICKER ---------- */
     if (showMap) {
         MapPickerScreen { lat, lng ->
-            viewModel.update { it.copy(latitude = lat, longitude = lng) }
+            viewModel.update {
+                it.copy(latitude = lat, longitude = lng)
+            }
             showMap = false
         }
     }

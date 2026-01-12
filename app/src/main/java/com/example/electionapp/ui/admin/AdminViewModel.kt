@@ -1,12 +1,11 @@
 package com.example.electionapp.ui.admin
 
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electionapp.data.local.entity.VoteCenterEntity
 import com.example.electionapp.data.repository.VoteCenterRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,7 +14,7 @@ class AdminViewModel @Inject constructor(
     private val repository: VoteCenterRepository
 ) : ViewModel() {
 
-    var uiState = mutableStateOf(
+    var uiState by mutableStateOf(
         VoteCenterEntity(
             centerNumber = 0,
             centerName = "",
@@ -29,24 +28,47 @@ class AdminViewModel @Inject constructor(
     )
         private set
 
-    fun getAllCenters(): Flow<List<VoteCenterEntity>> =
-        repository.getAllCenters()
+    var isSaving by mutableStateOf(false)
+        private set
 
     fun load(id: Int?) {
         if (id == null) return
         viewModelScope.launch {
-            uiState.value = repository.getById(id)
+            uiState = repository.getById(id)
         }
     }
 
     fun update(block: (VoteCenterEntity) -> VoteCenterEntity) {
-        uiState.value = block(uiState.value)
+        uiState = block(uiState)
     }
 
-    fun save(onDone: () -> Unit) {
+    private fun isValid(): Boolean {
+        return uiState.centerNumber > 0 &&
+                uiState.centerName.isNotBlank() &&
+                uiState.address.isNotBlank()
+    }
+
+    fun save(
+        onSuccess: () -> Unit,
+        onError: () -> Unit
+    ) {
+        if (!isValid()) {
+            onError()
+            return
+        }
+
         viewModelScope.launch {
-            repository.save(uiState.value)
-            onDone()
+            isSaving = true
+            try {
+                repository.save(uiState)
+                onSuccess()
+            } catch (e: Exception) {
+                onError()
+            } finally {
+                isSaving = false
+            }
         }
     }
+
+    fun getAllCenters() = repository.getAllCenters()
 }

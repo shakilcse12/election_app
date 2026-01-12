@@ -1,8 +1,7 @@
 package com.example.electionapp.ui.admin
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
@@ -19,7 +18,10 @@ fun AdminDashboardScreen(
     onEditClick: (Int) -> Unit,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
-    val centers by viewModel.getAllCenters().collectAsState(initial = emptyList())
+    val centers by viewModel.getAllCenters()
+        .collectAsState(initial = emptyList())
+
+    val listState = rememberLazyListState()
 
     Column(
         modifier = modifier
@@ -38,8 +40,12 @@ fun AdminDashboardScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(centers) { center ->
+        LazyColumn(
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(centers, key = { it.id }) { center ->
                 VoteCenterCard(center, onEditClick)
             }
         }
