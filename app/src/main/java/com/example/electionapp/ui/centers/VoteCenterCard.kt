@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -28,201 +29,116 @@ import com.example.electionapp.data.local.entity.VoteCenterEntity
 @Composable
 fun VoteCenterCard(
     center: VoteCenterEntity,
-    onClick: () -> Unit
+    isAdmin: Boolean = false, // New parameter
+    onClick: () -> Unit,
+    onEditClick: (() -> Unit)? = null // New parameter
 ) {
     val context = LocalContext.current
 
-    // Define Gradients
-    // 1. Blue Gradient for Center Number (Top-start light blue to bottom-end deep blue)
     val blueBadgeGradient = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFF4FC3F7), // Light Blue (Start)
-            Color(0xFF0288D1)  // Darker Blue (End)
-        )
+        colors = listOf(Color(0xFF4FC3F7), Color(0xFF0288D1))
     )
-
-    // 2. Green Gradient for Officer Avatar (Top-start light green to bottom-end deep green)
     val greenAvatarGradient = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFF81C784), // Light Green (Start)
-            Color(0xFF388E3C)  // Darker Green (End)
-        )
+        colors = listOf(Color(0xFF81C784), Color(0xFF388E3C))
     )
-
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-
+        Column(modifier = Modifier.padding(16.dp)) {
             /* ---------------- TOP ROW ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Number + Name
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 1. Vote Center Number Badge with Blue Gradient
                     Box(
                         modifier = Modifier
-                            .size(width = 48.dp, height = 48.dp)
-                            // Apply gradient background with the shape
+                            .size(48.dp)
                             .background(brush = blueBadgeGradient, shape = RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = center.centerNumber.toString(),
                             style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White // Text must be white on dark gradient
+                                fontWeight = FontWeight.ExtraBold, color = Color.White
                             )
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                    // 2. Vote Center Name
                     Text(
                         text = center.centerName,
                         style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
+                            fontWeight = FontWeight.Bold, fontSize = 17.sp
                         ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // 3. Map Icon
-                IconButton(
-                    modifier = Modifier
-                        .background(Color(0xFFFFEBEE), CircleShape)
-                        .size(42.dp),
-                    onClick = {
-                        val mapUri = Uri.parse(
-                            "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}(Vote Center ${center.centerNumber})"
-                        )
-                        context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // MAP BUTTON
+                    IconButton(
+                        modifier = Modifier.background(Color(0xFFFFEBEE), CircleShape).size(40.dp),
+                        onClick = {
+                            val mapUri = Uri.parse("geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}")
+                            context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
+                        }
+                    ) {
+                        Icon(Icons.Default.LocationOn, null, tint = Color(0xFFD32F2F), modifier = Modifier.size(20.dp))
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = "Open Map",
-                        tint = Color(0xFFD32F2F)
-                    )
+
+                    // EDIT BUTTON (Only shows if isAdmin is true)
+                    if (isAdmin) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            modifier = Modifier.background(Color(0xFFF3E5F5), CircleShape).size(40.dp),
+                            onClick = { onEditClick?.invoke() }
+                        ) {
+                            Icon(Icons.Default.Edit, null, tint = Color(0xFF7B1FA2), modifier = Modifier.size(20.dp))
+                        }
+                    }
                 }
             }
 
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 16.dp),
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 1.dp, color = Color(0xFFEEEEEE))
 
-            /* ---------------- PRESIDING OFFICER ROW ---------------- */
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Officer Info
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    // Officer Avatar with Green Gradient
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            // Apply gradient background
-                            .background(brush = greenAvatarGradient),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Officer",
-                            tint = Color.White // Icon must be white on dark gradient
-                        )
+            /* ---------------- OFFICER ROW ---------------- */
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(brush = greenAvatarGradient), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Person, null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
-
                     Spacer(modifier = Modifier.width(12.dp))
-
-                    // Officer Name
-                    Text(
-                        text = center.presidingOfficerName,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Text(text = center.presidingOfficerName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
                 }
-
-                // Call Icon
                 IconButton(
-                    modifier = Modifier
-                        .background(Color(0xFFE3F2FD), CircleShape)
-                        .size(42.dp),
-                    onClick = {
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_DIAL,
-                                Uri.parse("tel:${center.presidingOfficerPhone}")
-                            )
-                        )
-                    }
+                    modifier = Modifier.background(Color(0xFFE3F2FD), CircleShape).size(40.dp),
+                    onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${center.presidingOfficerPhone}"))) }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Call,
-                        contentDescription = "Call Presiding Officer",
-                        tint = Color(0xFF1976D2)
-                    )
+                    Icon(Icons.Default.Call, null, tint = Color(0xFF1976D2), modifier = Modifier.size(20.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            /* ---------------- ADDRESS & DETAILS ---------------- */
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
-                    .padding(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Others: ",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = Color.DarkGray
-                    )
-                    Text(
-                        text = center.otherOfficers,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.DarkGray
-                    )
-                }
-
+            /* ---------------- ADDRESS AREA ---------------- */
+            Column(modifier = Modifier.fillMaxWidth().background(Color(0xFFF9F9F9), RoundedCornerShape(8.dp)).padding(10.dp)) {
+                Text(text = "Others: ${center.otherOfficers}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = center.address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF616161),
-                    lineHeight = 16.sp
-                )
+                Text(text = center.address, style = MaterialTheme.typography.bodySmall, color = Color.DarkGray)
             }
         }
     }

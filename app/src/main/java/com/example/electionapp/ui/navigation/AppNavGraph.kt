@@ -85,6 +85,7 @@ fun AppNavGraph(
 
             AdminNavGraph(
                 navController = adminNavController,
+                mainNavController = navController, // Pass the parent controller here!
                 onLogout = {
                     navController.navigate(BottomNavItem.Centers.route) {
                         popUpTo("admin_root") { inclusive = true }

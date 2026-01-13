@@ -10,10 +10,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.electionapp.ui.admin.*
+import com.example.electionapp.ui.centers.VoteCenterListScreen
 
 @Composable
 fun AdminNavGraph(
     navController: NavHostController,
+    mainNavController: NavHostController, // Global App navigation (details)
     onLogout: () -> Unit
 ) {
     NavHost(
@@ -35,15 +37,12 @@ fun AdminNavGraph(
                 topBar = {
                     AdminTopBar(onLogout = onLogout)
                 }
-            ) { padding, snackbarHostState ->   // ✅ FIX HERE
-                AdminDashboardScreen(
-                    modifier = Modifier.padding(padding),
-                    onAddClick = {
-                        navController.navigate("admin/add")
-                    },
-                    onEditClick = { id ->
-                        navController.navigate("admin/edit/$id")
-                    }
+            ) { padding, _ ->   // ✅ FIX HERE
+                VoteCenterListScreen(
+                    modifier = Modifier.padding(padding), // APPLY PADDING HERE
+                    isAdmin = true, // KEY CHANGE
+                    onCenterClick = { id -> mainNavController.navigate("details/$id") },
+                    onEditClick = { id -> navController.navigate("admin/edit/$id") }
                 )
             }
         }
