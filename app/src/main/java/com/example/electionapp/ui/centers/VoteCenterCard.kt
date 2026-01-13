@@ -15,9 +15,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.electionapp.data.local.entity.VoteCenterEntity
 
 @Composable
@@ -27,30 +31,68 @@ fun VoteCenterCard(
 ) {
     val context = LocalContext.current
 
-    Card(
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = Color.White
+        )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
 
             /* ---------------- TOP ROW ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Vote Center ${center.centerNumber}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color(0xFF2E7D32),
+                // Number + Name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    // 1. Vote Center Number Badge
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.size(width = 48.dp, height = 48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = center.centerNumber.toString(),
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            )
+                        }
+                    }
 
-                /* MAP ICON — right of center name */
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // 2. Vote Center Name (Label Removed)
+                    Text(
+                        text = center.centerName,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        ),
+                        maxLines = 2, // Allow 2 lines since we have more vertical space now
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 3. Map Icon
                 IconButton(
+                    modifier = Modifier
+                        .background(Color(0xFFFFEBEE), CircleShape)
+                        .size(42.dp),
                     onClick = {
                         val mapUri = Uri.parse(
                             "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}(Vote Center ${center.centerNumber})"
@@ -66,44 +108,53 @@ fun VoteCenterCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
 
             /* ---------------- PRESIDING OFFICER ROW ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
+                // Officer Info
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
-                            .background(
-                                color = Color(0xFFE0E0E0),
-                                shape = CircleShape
-                            ),
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Officer",
-                            tint = Color(0xFF616161)
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
 
+                    // Officer Name (Label Removed)
                     Text(
                         text = center.presidingOfficerName,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                /* CALL ICON — right of officer name */
+                // Call Icon
                 IconButton(
+                    modifier = Modifier
+                        .background(Color(0xFFE3F2FD), CircleShape)
+                        .size(42.dp),
                     onClick = {
                         context.startActivity(
                             Intent(
@@ -121,20 +172,37 @@ fun VoteCenterCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = "Other Officers: ${center.otherOfficers}",
-                style = MaterialTheme.typography.bodySmall
-            )
+            /* ---------------- ADDRESS & DETAILS ---------------- */
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp))
+                    .padding(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Others: ",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = center.otherOfficers,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.DarkGray
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = center.address,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF424242)
-            )
+                Text(
+                    text = center.address,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF616161),
+                    lineHeight = 16.sp
+                )
+            }
         }
     }
 }
