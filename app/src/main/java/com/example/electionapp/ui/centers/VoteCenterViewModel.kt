@@ -38,7 +38,7 @@ class VoteCenterViewModel @Inject constructor(
 
     fun loadCenterById(id: Int) {
         viewModelScope.launch {
-            repository.getVoteCenters("").collect { list ->
+            repository.getVoteCenters("").first().let { list ->
                 _selectedCenter.value = list.find { it.id == id }
             }
         }

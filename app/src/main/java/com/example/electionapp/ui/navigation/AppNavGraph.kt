@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.electionapp.ui.about.AboutScreen
 import com.example.electionapp.ui.admin.LawPlaceholderScreen
 import com.example.electionapp.ui.auth.LoginScreen
 import com.example.electionapp.ui.centers.VoteCenterDetailsScreen
@@ -46,6 +47,10 @@ fun AppNavGraph(
 
         composable(BottomNavItem.Law.route) {
             LawPlaceholderScreen()
+        }
+
+        composable(BottomNavItem.About.route) {
+            AboutScreen()
         }
 
         composable(

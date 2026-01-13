@@ -1,5 +1,8 @@
 package com.example.electionapp.ui.main
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,33 +20,42 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute in listOf(
-        BottomNavItem.Centers.route,
-        BottomNavItem.Map.route,
-        BottomNavItem.Law.route
+    // Define all tabs that should show the bottom bar
+    val bottomNavItems = listOf(
+        BottomNavItem.Centers,
+        BottomNavItem.Map,
+        BottomNavItem.Law,
+        BottomNavItem.About // Add the new item here
     )
+
+    // Check if the current route is one of our main bottom nav tabs
+    val showBottomBar = currentRoute in bottomNavItems.map { it.route }
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
+            // Animated visibility makes the transition smoother
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
+            ) {
                 NavigationBar {
-                    listOf(
-                        BottomNavItem.Centers,
-                        BottomNavItem.Map,
-                        BottomNavItem.Law
-                    ).forEach { item ->
+                    bottomNavItems.forEach { item ->
                         NavigationBarItem(
                             selected = currentRoute == item.route,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
-                                        saveState = true
+                                if (currentRoute != item.route) {
+                                    navController.navigate(item.route) {
+                                        // Pop up to the start destination to avoid building up a huge stack
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
-                            icon = { Icon(item.icon, null) },
+                            icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) }
                         )
                     }
