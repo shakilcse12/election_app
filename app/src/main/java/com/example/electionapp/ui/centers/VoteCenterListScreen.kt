@@ -7,11 +7,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.components.SearchBar
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,18 +26,17 @@ fun VoteCenterListScreen(
 
     var showMenu by remember { mutableStateOf(false) }
 
-    /* ✅ EXTENDED search – NOTHING removed */
+    // Instant UI Filtering Logic
     val filteredCenters = remember(voteCenters, searchQuery) {
-        if (searchQuery.isBlank()) {
+        val query = searchQuery.trim().lowercase()
+        if (query.isEmpty()) {
             voteCenters
         } else {
-            val query = searchQuery.lowercase(Locale.getDefault())
-
             voteCenters.filter { center ->
-                center.centerName.lowercase(Locale.getDefault()).contains(query) ||   // ✅ NEW
-                        center.centerNumber.toString().contains(query) ||                      // existing
-                        center.presidingOfficerName.lowercase(Locale.getDefault()).contains(query) ||
-                        center.address.lowercase(Locale.getDefault()).contains(query)
+                center.centerName.lowercase().contains(query) ||
+                        center.centerNumber.toString().contains(query) ||
+                        center.presidingOfficerName.lowercase().contains(query) ||
+                        center.address.lowercase().contains(query)
             }
         }
     }
@@ -49,7 +49,6 @@ fun VoteCenterListScreen(
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menu")
                     }
-
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
@@ -66,42 +65,42 @@ fun VoteCenterListScreen(
             )
         }
     ) { paddingValues ->
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(12.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
-            /* ---------- SEARCH ---------- */
             item {
                 SearchBar(
                     query = searchQuery,
-                    onQueryChange = viewModel::onSearchChange
+                    onQueryChange = { viewModel.onSearchChange(it) }
                 )
             }
 
-            /* ---------- RESULTS ---------- */
             if (filteredCenters.isEmpty()) {
                 item {
-                    Text(
-                        text = "No vote centers found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (searchQuery.isEmpty()) "No vote centers available"
+                            else "No results found for \"$searchQuery\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Gray
+                        )
+                    }
                 }
             } else {
                 items(
                     items = filteredCenters,
-                    key = { it.id }
+                    key = { it.id } // Entity autoGenerate ensures these are unique
                 ) { center ->
                     VoteCenterCard(
                         center = center,
-                        onClick = {
-                            onCenterClick(center.id)
-                        }
+                        onClick = { onCenterClick(center.id) }
                     )
                 }
             }

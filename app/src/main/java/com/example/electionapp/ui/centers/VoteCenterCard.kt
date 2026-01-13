@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,12 +32,30 @@ fun VoteCenterCard(
 ) {
     val context = LocalContext.current
 
+    // Define Gradients
+    // 1. Blue Gradient for Center Number (Top-start light blue to bottom-end deep blue)
+    val blueBadgeGradient = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF4FC3F7), // Light Blue (Start)
+            Color(0xFF0288D1)  // Darker Blue (End)
+        )
+    )
+
+    // 2. Green Gradient for Officer Avatar (Top-start light green to bottom-end deep green)
+    val greenAvatarGradient = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFF81C784), // Light Green (Start)
+            Color(0xFF388E3C)  // Darker Green (End)
+        )
+    )
+
+
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = Color.White
@@ -57,33 +76,33 @@ fun VoteCenterCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // 1. Vote Center Number Badge
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.size(width = 48.dp, height = 48.dp)
+                    // 1. Vote Center Number Badge with Blue Gradient
+                    Box(
+                        modifier = Modifier
+                            .size(width = 48.dp, height = 48.dp)
+                            // Apply gradient background with the shape
+                            .background(brush = blueBadgeGradient, shape = RoundedCornerShape(8.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = center.centerNumber.toString(),
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                        Text(
+                            text = center.centerNumber.toString(),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White // Text must be white on dark gradient
                             )
-                        }
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    // 2. Vote Center Name (Label Removed)
+                    // 2. Vote Center Name
                     Text(
                         text = center.centerName,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         ),
-                        maxLines = 2, // Allow 2 lines since we have more vertical space now
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -124,23 +143,25 @@ fun VoteCenterCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
+                    // Officer Avatar with Green Gradient
                     Box(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondaryContainer),
+                            // Apply gradient background
+                            .background(brush = greenAvatarGradient),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Officer",
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            tint = Color.White // Icon must be white on dark gradient
                         )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Officer Name (Label Removed)
+                    // Officer Name
                     Text(
                         text = center.presidingOfficerName,
                         style = MaterialTheme.typography.bodyLarge.copy(

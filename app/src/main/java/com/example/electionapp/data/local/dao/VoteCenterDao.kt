@@ -22,14 +22,17 @@ interface VoteCenterDao {
     @Query("SELECT * FROM vote_centers WHERE id = :id")
     suspend fun getById(id: Int): VoteCenterEntity?
 
+    // FIXED: Added centerName and simplified to a single query call
     @Query("""
-    SELECT * FROM vote_centers
-    WHERE presidingOfficerName LIKE :query
-       OR address LIKE :query
-       OR centerNumber LIKE :query
-    ORDER BY centerNumber ASC
-""")
+        SELECT * FROM vote_centers 
+        WHERE centerName LIKE '%' || :query || '%' 
+        OR presidingOfficerName LIKE '%' || :query || '%' 
+        OR address LIKE '%' || :query || '%'
+        OR CAST(centerNumber AS TEXT) LIKE '%' || :query || '%'
+        ORDER BY centerNumber ASC
+    """)
     fun searchCenters(query: String): Flow<List<VoteCenterEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(center: VoteCenterEntity)
 
