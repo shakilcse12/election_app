@@ -44,10 +44,10 @@ fun AboutScreen() {
             ) {
                 item {
                     AboutMemberCard(
-                        role = "App Idea Provider",
-                        name = "John Doe",
-                        designation = "Lead Strategist",
-                        location = "Cumilla, Bangladesh",
+                        role = "App Concept",
+                        name = "Md. Abdullah Al Roni",
+                        designation = "Upazila Nirbahi Officer",
+                        location = "Sakhipur, Tangail, Bangladesh",
                         icon = Icons.Default.Info,
                         gradient = Brush.linearGradient(listOf(Color(0xFF6A11CB), Color(0xFF2575FC)))
                     )
@@ -55,9 +55,9 @@ fun AboutScreen() {
                 item {
                     AboutMemberCard(
                         role = "App Developer",
-                        name = "Your Name",
-                        designation = "Android Engineer",
-                        location = "Dhaka, Bangladesh",
+                        name = "Md. Tahmidul Hossain",
+                        designation = "Upazila ICT Officer (Android Engineer)",
+                        location = "Chauddagram, Cumilla, Bangladesh",
                         icon = Icons.Default.Build,
                         gradient = Brush.linearGradient(listOf(Color(0xFF00B09B), Color(0xFF96C93D)))
                     )
@@ -65,9 +65,9 @@ fun AboutScreen() {
                 item {
                     AboutMemberCard(
                         role = "App Designer",
-                        name = "Jane Smith",
-                        designation = "UI/UX Specialist",
-                        location = "Chittagong, Bangladesh",
+                        name = "Hashib Mahmud",
+                        designation = "Upazila ICT Officer (UI/UX Specialist)",
+                        location = "Sakhipur, Tangail- Bangladesh",
                         icon = Icons.Default.Face,
                         gradient = Brush.linearGradient(listOf(Color(0xFFFF5F6D), Color(0xFFFFC371)))
                     )
@@ -75,9 +75,9 @@ fun AboutScreen() {
                 item {
                     AboutMemberCard(
                         role = "Special Thanks",
-                        name = "The Election Commission",
-                        designation = "Data Support",
-                        location = "Regional Office",
+                        name = "Sharifa Hoque",
+                        designation = "District Commissioner",
+                        location = "Tangail, Bangladesh",
                         icon = Icons.Default.Favorite,
                         gradient = Brush.linearGradient(listOf(Color(0xFFEB3349), Color(0xFFF45C43)))
                     )

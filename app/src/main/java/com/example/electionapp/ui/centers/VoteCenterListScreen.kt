@@ -35,7 +35,8 @@ fun VoteCenterListScreen(
             voteCenters.filter { center ->
                 center.centerName.lowercase().contains(query) ||
                         center.centerNumber.toString().contains(query) ||
-                        center.address.lowercase().contains(query)
+                        center.address.lowercase().contains(query) ||
+                        center.presidingOfficerName.lowercase().contains(query)
             }
         }
     }
