@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.electionapp.data.local.AppDatabase
 import com.example.electionapp.data.local.dao.VoteCenterDao
+import com.example.electionapp.data.local.db.MIGRATION_2_3
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +26,7 @@ object DatabaseModule {
             AppDatabase::class.java,
             "election_db"
         )
-            .fallbackToDestructiveMigrationFrom()
+            .addMigrations(MIGRATION_2_3)
             .build()
 
 

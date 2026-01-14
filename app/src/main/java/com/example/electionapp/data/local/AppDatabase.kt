@@ -7,8 +7,8 @@ import com.example.electionapp.data.local.entity.VoteCenterEntity
 
 @Database(
     entities = [VoteCenterEntity::class],
-    version = 3, // incremented for development
-    exportSchema = false
+    version = 3,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun voteCenterDao(): VoteCenterDao
