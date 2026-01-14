@@ -28,13 +28,18 @@ class AdminViewModel @Inject constructor(
     )
         private set
 
-    var isSaving by mutableStateOf(false)
+    private var isSaving by mutableStateOf(false)
         private set
 
     fun load(id: Int?) {
         if (id == null) return
+
         viewModelScope.launch {
-            uiState = repository.getById(id)
+            val center = repository.getById(id)
+            if (center != null) {
+                uiState = center
+            }
+            // else: keep default empty uiState
         }
     }
 
@@ -67,6 +72,7 @@ class AdminViewModel @Inject constructor(
             } finally {
                 isSaving = false
             }
+            isSaving = false
         }
     }
 

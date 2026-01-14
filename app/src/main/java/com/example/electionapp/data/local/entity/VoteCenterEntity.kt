@@ -1,6 +1,7 @@
 package com.example.electionapp.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "vote_centers")

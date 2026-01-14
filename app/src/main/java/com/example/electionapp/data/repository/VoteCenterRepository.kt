@@ -37,6 +37,18 @@ class VoteCenterRepository @Inject constructor(
     suspend fun clearAll() = dao.clearAll()
 
     suspend fun getCenter(id: Int) = dao.getById(id)
-    suspend fun save(center: VoteCenterEntity) = dao.insert(center)
-    suspend fun getById(id: Int): VoteCenterEntity = dao.getById(id)!!
+    suspend fun save(center: VoteCenterEntity) = dao.insert(normalize(center))
+    suspend fun getById(id: Int): VoteCenterEntity? =
+        dao.getById(id)
+
+    //suspend fun getById(id: Int): VoteCenterEntity = dao.getById(id)!!
+
+    private fun normalize(center: VoteCenterEntity): VoteCenterEntity {
+        return center.copy(
+            centerName = center.centerName.trim().replace("\\s+".toRegex(), " "),
+            presidingOfficerName = center.presidingOfficerName.trim(),
+            address = center.address.trim()
+        )
+    }
+
 }

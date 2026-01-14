@@ -22,12 +22,20 @@ interface VoteCenterDao {
     @Query("SELECT * FROM vote_centers WHERE id = :id")
     suspend fun getById(id: Int): VoteCenterEntity?
 
-    // FIXED: Added centerName and simplified to a single query call
+    /**
+     * Search query covering:
+     * 1. Center Name
+     * 2. Presiding Officer Name
+     * 3. Address
+     * 4. Center Number (via CAST)
+     * 5. Presiding Officer Phone (Added for convenience)
+     */
     @Query("""
         SELECT * FROM vote_centers 
         WHERE centerName LIKE '%' || :query || '%' 
         OR presidingOfficerName LIKE '%' || :query || '%' 
         OR address LIKE '%' || :query || '%'
+        OR presidingOfficerPhone LIKE '%' || :query || '%'
         OR CAST(centerNumber AS TEXT) LIKE '%' || :query || '%'
         ORDER BY centerNumber ASC
     """)
