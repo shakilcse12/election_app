@@ -13,11 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.components.SearchBar
+import java.text.Normalizer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoteCenterListScreen(
-    modifier: Modifier = Modifier, // ADD THIS PARAMETER
+    modifier: Modifier = Modifier,
     isAdmin: Boolean = false,
     onCenterClick: (Int) -> Unit,
     onEditClick: ((Int) -> Unit)? = null,
@@ -28,22 +29,25 @@ fun VoteCenterListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
 
+    // Normalize function for Unicode-safe search (works for Bengali & English)
+    fun normalizeText(input: String): String {
+        return Normalizer.normalize(input, Normalizer.Form.NFKC)
+            .trim()
+            .lowercase()
+    }
+
+    // Filter vote centers based on normalized search query
     val filteredCenters = remember(voteCenters, searchQuery) {
-        val query = searchQuery.trim().lowercase()
+        val query = normalizeText(searchQuery)
         if (query.isEmpty()) voteCenters
-        else {
-            voteCenters.filter { center ->
-                center.centerName.lowercase().contains(query) ||
-                        center.centerNumber.toString().contains(query) ||
-                        center.address.lowercase().contains(query) ||
-                        center.presidingOfficerName.lowercase().contains(query)
-            }
+        else voteCenters.filter { center ->
+            normalizeText(center.centerName).contains(query) ||
+                    center.centerNumber.toString().contains(query) ||
+                    normalizeText(center.presidingOfficerName).contains(query) ||
+                    normalizeText(center.address).contains(query)
         }
     }
 
-    // We only show the Scaffold's TopBar here if NOT in Admin mode
-    // (AdminNavGraph usually provides its own Scaffold/TopBar)
-    // Apply the incoming modifier to the root container
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -56,7 +60,8 @@ fun VoteCenterListScreen(
                             }
                             DropdownMenu(
                                 expanded = showMenu,
-                                onDismissRequest = { showMenu = false }) {
+                                onDismissRequest = { showMenu = false }
+                            ) {
                                 DropdownMenuItem(
                                     text = { Text("Admin Login") },
                                     onClick = {
@@ -71,7 +76,9 @@ fun VoteCenterListScreen(
             }
         ) { paddingValues ->
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -85,18 +92,24 @@ fun VoteCenterListScreen(
                 if (filteredCenters.isEmpty()) {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 40.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = if (searchQuery.isEmpty()) "No vote centers available"
                                 else "No results found for \"$searchQuery\"",
-                                style = MaterialTheme.typography.bodyMedium, color = Color.Gray
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
                             )
                         }
                     }
                 } else {
-                    items(items = filteredCenters, key = { it.id }) { center ->
+                    items(
+                        items = filteredCenters,
+                        key = { it.id }
+                    ) { center ->
                         VoteCenterCard(
                             center = center,
                             isAdmin = isAdmin,
