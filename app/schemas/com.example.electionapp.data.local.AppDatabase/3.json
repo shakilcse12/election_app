@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 3,
-    "identityHash": "f4100a16e6586325d8870f197a99beb8",
+    "identityHash": "0bef226ee85a1b671b5b0bf24666d21f",
     "entities": [
       {
         "tableName": "vote_centers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `centerNumber` INTEGER NOT NULL, `centerName` TEXT NOT NULL, `presidingOfficerName` TEXT NOT NULL, `presidingOfficerPhone` TEXT NOT NULL, `otherOfficers` TEXT NOT NULL, `address` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `isSaving` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `centerNumber` INTEGER NOT NULL, `centerName` TEXT NOT NULL, `presidingOfficerName` TEXT NOT NULL, `presidingOfficerPhone` TEXT NOT NULL, `otherOfficers` TEXT NOT NULL, `address` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -61,12 +61,6 @@
             "columnName": "longitude",
             "affinity": "REAL",
             "notNull": true
-          },
-          {
-            "fieldPath": "isSaving",
-            "columnName": "isSaving",
-            "affinity": "INTEGER",
-            "notNull": true
           }
         ],
         "primaryKey": {
@@ -82,7 +76,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f4100a16e6586325d8870f197a99beb8')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0bef226ee85a1b671b5b0bf24666d21f')"
     ]
   }
 }

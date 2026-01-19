@@ -1,7 +1,6 @@
 package com.example.electionapp.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "vote_centers")
@@ -17,7 +16,5 @@ data class VoteCenterEntity(
     val address: String,
 
     val latitude: Double,
-    val longitude: Double,
-
-    val isSaving: Boolean = false
+    val longitude: Double
 )

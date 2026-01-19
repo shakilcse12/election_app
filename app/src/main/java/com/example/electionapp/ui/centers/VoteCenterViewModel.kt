@@ -19,13 +19,28 @@ class VoteCenterViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
+    /**
+     * Production Ready Flow:
+     * 1. Debounce (wait for typing to stop)
+     * 2. Distinct (don't search same thing twice)
+     * 3. Fetch Data
+     * 4. Map to UI Items using .toUiItem()
+     */
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
-    private val _voteCenters = _searchQuery
+    val voteCenters: StateFlow<List<VoteCenterItem>> = _searchQuery
         .debounce(300L)
         .distinctUntilChanged()
-        .flatMapLatest { query -> repository.getVoteCenters(query) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    val voteCenters: StateFlow<List<VoteCenterEntity>> = _voteCenters
+        .flatMapLatest { query ->
+            repository.getVoteCenters(query)
+        }
+        .map { entities ->
+            entities.map { it.toUiItem() } // Using the Mapper here!
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
 
     private val _selectedCenter = MutableStateFlow<VoteCenterEntity?>(null)
     val selectedCenter: StateFlow<VoteCenterEntity?> = _selectedCenter
@@ -43,17 +58,7 @@ class VoteCenterViewModel @Inject constructor(
 
     fun loadCenterById(id: Int) {
         viewModelScope.launch {
-            val center = repository.getById(id)
-            _selectedCenter.value = center
-        }
-    }
-
-
-    fun loadCenterById2(id: Int) {
-        viewModelScope.launch {
-            repository.getVoteCenters("").first().let { list ->
-                _selectedCenter.value = list.find { it.id == id }
-            }
+            _selectedCenter.value = repository.getById(id)
         }
     }
 }

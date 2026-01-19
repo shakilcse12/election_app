@@ -28,7 +28,7 @@ class AdminViewModel @Inject constructor(
     )
         private set
 
-    private var isSaving by mutableStateOf(false)
+    internal var isSaving by mutableStateOf(false)
         private set
 
     fun load(id: Int?) {

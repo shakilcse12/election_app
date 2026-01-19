@@ -1,5 +1,6 @@
 package com.example.electionapp.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,6 +14,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.electionapp.data.local.entity.VoteCenterEntity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,103 +26,105 @@ fun AddEditVoteCenterScreen(
     viewModel: AdminViewModel = hiltViewModel()
 ) {
     val state = viewModel.uiState
+    val isSaving = viewModel.isSaving
+
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     var showMap by remember { mutableStateOf(false) }
     var attemptedSave by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    var initialState by remember { mutableStateOf<VoteCenterEntity?>(null) }
 
     LaunchedEffect(centerId) {
         viewModel.load(centerId)
     }
 
-    /* ---------------- Validation ---------------- */
+    LaunchedEffect(state) {
+        if (initialState == null && (centerId == null || state.id != 0)) {
+            initialState = state
+        }
+    }
 
-    val centerNumberError =
-        attemptedSave && state.centerNumber <= 0
+    val isDirty = initialState != null && state != initialState
 
-    val centerNameError =
-        attemptedSave && state.centerName.isBlank()
+    BackHandler(enabled = isDirty) {
+        showDiscardDialog = true
+    }
 
-    val officerNameError =
-        attemptedSave && state.presidingOfficerName.isBlank()
+    /* ---------------- Validation Logic ---------------- */
+    val centerNumberError = attemptedSave && state.centerNumber <= 0
+    val centerNameError = attemptedSave && state.centerName.isBlank()
+    val officerNameError = attemptedSave && state.presidingOfficerName.isBlank()
+    val phoneError = attemptedSave && state.presidingOfficerPhone.length < 6
+    val addressError = attemptedSave && state.address.isBlank()
+    val hasErrors = centerNumberError || centerNameError || officerNameError || phoneError || addressError
 
-    val phoneError =
-        attemptedSave && state.presidingOfficerPhone.length < 6
-
-    val addressError =
-        attemptedSave && state.address.isBlank()
-
-    val hasErrors =
-        centerNumberError ||
-                centerNameError ||
-                officerNameError ||
-                phoneError ||
-                addressError
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard Changes?") },
+            text = { Text("You have unsaved changes. Are you sure you want to go back?") },
+            confirmButton = {
+                TextButton(onClick = onDone) {
+                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Editing")
+                }
+            }
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(if (centerId == null) "Add Vote Center" else "Edit Vote Center")
-                },
+                title = { Text(if (centerId == null) "Add Vote Center" else "Edit Vote Center") },
                 navigationIcon = {
-                    IconButton(onClick = onDone) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                    IconButton(onClick = { if (isDirty) showDiscardDialog = true else onDone() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
         },
         floatingActionButton = {
-            Box(
-                modifier = Modifier
-                    .padding(WindowInsets.ime.asPaddingValues())
-                    .navigationBarsPadding()
-            ) {
+            Box(modifier = Modifier.padding(WindowInsets.ime.asPaddingValues()).navigationBarsPadding()) {
                 FloatingActionButton(
                     onClick = {
-                        if (state.isSaving) return@FloatingActionButton
-
+                        if (isSaving) return@FloatingActionButton
                         attemptedSave = true
 
                         if (hasErrors) {
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    "Please fix the highlighted errors"
-                                )
-                            }
+                            scope.launch { snackbarHostState.showSnackbar("Please fix errors") }
                             return@FloatingActionButton
                         }
 
                         viewModel.save(
                             onSuccess = {
+                                // FIXED LOGIC:
+                                // We launch the snackbar in its own coroutine so it DOES NOT block navigation
                                 scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "Vote center saved successfully"
-                                    )
+                                    snackbarHostState.showSnackbar("Saved successfully")
                                 }
-                                onDone()
+
+                                // Now we delay for a very short time and navigate immediately
+                                scope.launch {
+                                    delay(150) // Shortest time for the user to see the button change
+                                    onDone()
+                                }
                             },
                             onError = {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        "Failed to save vote center"
-                                    )
-                                }
+                                scope.launch { snackbarHostState.showSnackbar("Failed to save") }
                             }
                         )
                     }
                 ) {
-                    if (state.isSaving) {
-                        CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.size(22.dp)
-                        )
+                    if (isSaving) {
+                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
                     } else {
                         Icon(Icons.Default.Check, contentDescription = "Save Center")
                     }
@@ -127,7 +132,6 @@ fun AddEditVoteCenterScreen(
             }
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .padding(paddingValues)
@@ -136,119 +140,61 @@ fun AddEditVoteCenterScreen(
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
-            /* ---------- CENTER NUMBER ---------- */
             OutlinedTextField(
                 value = if (state.centerNumber == 0) "" else state.centerNumber.toString(),
-                onValueChange = { input ->
-                    viewModel.update {
-                        it.copy(centerNumber = input.toIntOrNull() ?: 0)
-                    }
-                },
+                onValueChange = { input -> viewModel.update { it.copy(centerNumber = input.toIntOrNull() ?: 0) } },
                 label = { Text("Center Number") },
                 isError = centerNumberError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                supportingText = {
-                    if (centerNumberError) {
-                        Text("Center number must be greater than 0")
-                    }
-                },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            /* ---------- CENTER NAME ---------- */
             OutlinedTextField(
                 value = state.centerName,
-                onValueChange = {
-                    viewModel.update { current ->
-                        current.copy(centerName = it)
-                    }
-                },
+                onValueChange = { input -> viewModel.update { it.copy(centerName = input) } },
                 label = { Text("Center Name") },
                 isError = centerNameError,
-                supportingText = {
-                    if (centerNameError) {
-                        Text("Center name is required")
-                    }
-                },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            /* ---------- PRESIDING OFFICER ---------- */
             OutlinedTextField(
                 value = state.presidingOfficerName,
-                onValueChange = {
-                    viewModel.update { current ->
-                        current.copy(presidingOfficerName = it)
-                    }
-                },
+                onValueChange = { input -> viewModel.update { it.copy(presidingOfficerName = input) } },
                 label = { Text("Presiding Officer Name") },
                 isError = officerNameError,
-                supportingText = {
-                    if (officerNameError) {
-                        Text("Officer name is required")
-                    }
-                },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = state.presidingOfficerPhone,
-                onValueChange = {
-                    viewModel.update { current ->
-                        current.copy(presidingOfficerPhone = it)
-                    }
-                },
+                onValueChange = { input -> viewModel.update { it.copy(presidingOfficerPhone = input) } },
                 label = { Text("Presiding Officer Phone") },
                 isError = phoneError,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                supportingText = {
-                    if (phoneError) {
-                        Text("Enter a valid phone number")
-                    }
-                },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            /* ---------- ADDRESS ---------- */
             OutlinedTextField(
                 value = state.address,
-                onValueChange = {
-                    viewModel.update { current ->
-                        current.copy(address = it)
-                    }
-                },
+                onValueChange = { input -> viewModel.update { it.copy(address = input) } },
                 label = { Text("Vote Center Address") },
                 isError = addressError,
-                supportingText = {
-                    if (addressError) {
-                        Text("Address is required")
-                    }
-                },
                 minLines = 2,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            /* ---------- MAP PICKER ---------- */
-            Button(
-                onClick = { showMap = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Button(onClick = { showMap = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Pick Location on Map")
             }
 
-            Text("Latitude: ${state.latitude}")
-            Text("Longitude: ${state.longitude}")
+            Text("Lat: ${state.latitude}, Lng: ${state.longitude}", style = MaterialTheme.typography.bodySmall)
         }
     }
 
-    /* ---------- MAP PICKER ---------- */
     if (showMap) {
-        MapPickerScreen { lat, lng ->
-            viewModel.update {
-                it.copy(latitude = lat, longitude = lng)
-            }
+        /*MapPickerScreen { lat, lng, address ->
+            viewModel.update { it.copy(latitude = lat, longitude = lng, address = address) }
             showMap = false
-        }
+        }*/
     }
 }

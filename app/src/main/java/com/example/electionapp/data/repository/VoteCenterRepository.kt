@@ -11,37 +11,26 @@ class VoteCenterRepository @Inject constructor(
     private val dao: VoteCenterDao
 ) {
 
-    // Fetch all centers or search by query
+    // Fetch all or search. DAO handles the wildcard logic.
     fun getVoteCenters(query: String): Flow<List<VoteCenterEntity>> {
         return if (query.isBlank()) {
-            dao.getAllCenters()
+            dao.getAll()
         } else {
-            dao.searchCenters("%$query%")
+            // Your DAO query likely uses: LIKE '%' || :query || '%'
+            dao.searchCenters(query)
         }
     }
 
     fun getAllCenters(): Flow<List<VoteCenterEntity>> = dao.getAll()
 
-    // Insert dummy or new data
-    suspend fun insertCenters(centers: List<VoteCenterEntity>) {
-        dao.insertAll(centers)
-    }
-
-    // Clear all data
-    suspend fun clearCenters() {
-        dao.clearAll()
-    }
-
-    suspend fun insertAll(centers: List<VoteCenterEntity>) = dao.insertAll(centers)
+    suspend fun insertCenters(centers: List<VoteCenterEntity>) = dao.insertAll(centers)
 
     suspend fun clearAll() = dao.clearAll()
 
-    suspend fun getCenter(id: Int) = dao.getById(id)
-    suspend fun save(center: VoteCenterEntity) = dao.insert(normalize(center))
-    suspend fun getById(id: Int): VoteCenterEntity? =
-        dao.getById(id)
+    // Returns nullable to be safe
+    suspend fun getById(id: Int): VoteCenterEntity? = dao.getById(id)
 
-    //suspend fun getById(id: Int): VoteCenterEntity = dao.getById(id)!!
+    suspend fun save(center: VoteCenterEntity) = dao.insert(normalize(center))
 
     private fun normalize(center: VoteCenterEntity): VoteCenterEntity {
         return center.copy(
@@ -50,5 +39,4 @@ class VoteCenterRepository @Inject constructor(
             address = center.address.trim()
         )
     }
-
 }

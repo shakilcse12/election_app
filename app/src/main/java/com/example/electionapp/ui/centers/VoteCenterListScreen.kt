@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.components.SearchBar
-import java.text.Normalizer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,28 +24,10 @@ fun VoteCenterListScreen(
     onAdminLoginClick: (() -> Unit)? = null,
     viewModel: VoteCenterViewModel = hiltViewModel()
 ) {
+    // Collects List<VoteCenterItem> (already filtered & mapped)
     val voteCenters by viewModel.voteCenters.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
-
-    // Normalize function for Unicode-safe search (works for Bengali & English)
-    fun normalizeText(input: String): String {
-        return Normalizer.normalize(input, Normalizer.Form.NFKC)
-            .trim()
-            .lowercase()
-    }
-
-    // Filter vote centers based on normalized search query
-    val filteredCenters = remember(voteCenters, searchQuery) {
-        val query = normalizeText(searchQuery)
-        if (query.isEmpty()) voteCenters
-        else voteCenters.filter { center ->
-            normalizeText(center.centerName).contains(query) ||
-                    center.centerNumber.toString().contains(query) ||
-                    normalizeText(center.presidingOfficerName).contains(query) ||
-                    normalizeText(center.address).contains(query)
-        }
-    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -89,7 +70,7 @@ fun VoteCenterListScreen(
                     )
                 }
 
-                if (filteredCenters.isEmpty()) {
+                if (voteCenters.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -107,14 +88,14 @@ fun VoteCenterListScreen(
                     }
                 } else {
                     items(
-                        items = filteredCenters,
-                        key = { it.id }
-                    ) { center ->
+                        items = voteCenters,
+                        key = { it.entity.id } // Use the entity ID as key
+                    ) { item ->
                         VoteCenterCard(
-                            center = center,
+                            center = item.entity, // Pass the inner entity to Card
                             isAdmin = isAdmin,
-                            onClick = { onCenterClick(center.id) },
-                            onEditClick = { onEditClick?.invoke(center.id) }
+                            onClick = { onCenterClick(item.entity.id) },
+                            onEditClick = { onEditClick?.invoke(item.entity.id) }
                         )
                     }
                 }
