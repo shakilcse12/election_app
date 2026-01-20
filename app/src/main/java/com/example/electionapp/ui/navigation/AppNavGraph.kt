@@ -15,6 +15,7 @@ import com.example.electionapp.ui.centers.VoteCenterDetailsScreen
 import com.example.electionapp.ui.centers.VoteCenterListScreen
 import com.example.electionapp.ui.law.LawEnforcementScreen
 import com.example.electionapp.ui.map.MapPlaceholderScreen
+import com.example.electionapp.ui.map.VoteCenterMapScreen
 
 @Composable
 fun AppNavGraph(
@@ -42,7 +43,8 @@ fun AppNavGraph(
         }
 
         composable(BottomNavItem.Map.route) {
-            MapPlaceholderScreen()
+            VoteCenterMapScreen()
+
         }
 
         composable(BottomNavItem.Law.route) {

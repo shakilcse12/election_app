@@ -89,6 +89,9 @@ dependencies {
     /* ---------------- Google Maps ---------------- */
     implementation(libs.google.maps.compose)
     implementation(libs.google.play.services.maps)
+    /* ---------------- OpenStreetMap (OSM) ---------------- */
+    // Added osm-droid for free map alternatives
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
 
     /* ---------------- Testing ---------------- */
     testImplementation(libs.junit)
