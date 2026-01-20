@@ -183,6 +183,27 @@ fun AddEditVoteCenterScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = if (state.latitude == 0.0) "" else state.latitude.toString(),
+                    onValueChange = { input ->
+                        viewModel.update { it.copy(latitude = input.toDoubleOrNull() ?: 0.0) }
+                    },
+                    label = { Text("Latitude") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f)
+                )
+                OutlinedTextField(
+                    value = if (state.longitude == 0.0) "" else state.longitude.toString(),
+                    onValueChange = { input ->
+                        viewModel.update { it.copy(longitude = input.toDoubleOrNull() ?: 0.0) }
+                    },
+                    label = { Text("Longitude") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
             Button(onClick = { showMap = true }, modifier = Modifier.fillMaxWidth()) {
                 Text("Pick Location on Map")
             }
@@ -192,9 +213,14 @@ fun AddEditVoteCenterScreen(
     }
 
     if (showMap) {
-        /*MapPickerScreen { lat, lng, address ->
-            viewModel.update { it.copy(latitude = lat, longitude = lng, address = address) }
-            showMap = false
-        }*/
+        MapPickerScreen(
+            initialLat = state.latitude,
+            initialLng = state.longitude,
+            onLocationPicked = { lat, lng ->
+                viewModel.update { it.copy(latitude = lat, longitude = lng) }
+                showMap = false
+            },
+            onDismiss = { showMap = false }
+        )
     }
 }
