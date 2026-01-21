@@ -103,7 +103,7 @@ fun VoteCenterMapScreen(
                     val marker = Marker(view)
                     marker.position = GeoPoint(center.entity.latitude, center.entity.longitude)
                     marker.title = center.entity.centerName
-                    marker.snippet = "${center.entity.address}\n\nTap bubble for Directions"
+                    marker.snippet = "${center.entity.address}\n\n.Tap here for Directions"
 
                     marker.setOnMarkerClickListener { m, _ ->
                         m.showInfoWindow()

@@ -28,6 +28,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.Marker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,9 +62,6 @@ fun VoteCenterDetailsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        // Go back to previous page
-                        // This will be handled by the navigation system
-                        // or you can add a callback parameter if needed
                         val activity = context.findActivity()
                         activity?.onBackPressed()
                     }) {
@@ -85,7 +87,6 @@ fun VoteCenterDetailsScreen(
                         .padding(bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Call Officer Button
                     FilledTonalButton(
                         onClick = {
                             context.startActivity(
@@ -97,28 +98,22 @@ fun VoteCenterDetailsScreen(
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            Icons.Default.Call,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Call Officer")
                     }
 
-                    // Open Map Button
                     Button(
                         onClick = {
-                            val uri = Uri.parse("geo:${center!!.latitude},${center!!.longitude}")
-                            context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                            // Using the universal Google Maps link for route preview as discussed before
+                            val uri = "http://maps.google.com/maps?daddr=${center!!.latitude},${center!!.longitude}"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
+                            intent.setPackage("com.google.android.apps.maps")
+                            context.startActivity(intent)
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Open Map")
                     }
@@ -147,7 +142,6 @@ fun VoteCenterDetailsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Center Number Badge
                         Surface(
                             color = MaterialTheme.colorScheme.primary,
                             shape = MaterialTheme.shapes.small,
@@ -166,7 +160,6 @@ fun VoteCenterDetailsScreen(
                             )
                         }
 
-                        // Center Name
                         Text(
                             text = it.centerName,
                             style = MaterialTheme.typography.headlineMedium.copy(
@@ -178,7 +171,6 @@ fun VoteCenterDetailsScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
 
-                        // Coordinates
                         Text(
                             text = "📍 ${String.format("%.6f", it.latitude)}, ${String.format("%.6f", it.longitude)}",
                             style = MaterialTheme.typography.bodySmall,
@@ -189,12 +181,10 @@ fun VoteCenterDetailsScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Information Cards
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Officer Information Card
                     InformationCard(
                         title = "Presiding Officer",
                         icon = Icons.Default.Person,
@@ -207,10 +197,7 @@ fun VoteCenterDetailsScreen(
                                 value = it.presidingOfficerName,
                                 iconColor = MaterialTheme.colorScheme.primary
                             )
-                            Divider(
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
+                            Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                             InfoRow(
                                 icon = Icons.Default.Phone,
                                 label = "Phone",
@@ -220,7 +207,6 @@ fun VoteCenterDetailsScreen(
                         }
                     }
 
-                    // Other Officers Card
                     if (it.otherOfficers.isNotBlank()) {
                         InformationCard(
                             title = "Support Staff",
@@ -229,17 +215,13 @@ fun VoteCenterDetailsScreen(
                         ) {
                             Text(
                                 text = it.otherOfficers,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp
-                                ),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                         }
                     }
 
-                    // Address Card
                     InformationCard(
                         title = "Vote Center Location",
                         icon = Icons.Default.Place,
@@ -253,81 +235,68 @@ fun VoteCenterDetailsScreen(
                                 imageVector = Icons.Default.Home,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(top = 2.dp)
+                                modifier = Modifier.size(20.dp).padding(top = 2.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = it.address,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 16.sp,
-                                    lineHeight = 24.sp
-                                ),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
-                    // Map Preview Section (Non-clickable info)
+                    // --- NEW: Live OpenStreetMap Preview ---
                     Surface(
                         shape = MaterialTheme.shapes.medium,
                         border = CardDefaults.outlinedCardBorder(),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp) // Fixed height for map preview
                     ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Map Location",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Tap the 'Open Map' button below to navigate to this vote center",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "${String.format("%.4f", it.latitude)}, ${String.format("%.4f", it.longitude)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
+                        AndroidView(
+                            factory = { ctx ->
+                                MapView(ctx).apply {
+                                    setTileSource(TileSourceFactory.MAPNIK)
+                                    setMultiTouchControls(true)
+                                    isClickable = true
+
+                                    val point = GeoPoint(it.latitude, it.longitude)
+                                    controller.setZoom(16.5)
+                                    controller.setCenter(point)
+
+                                    val marker = Marker(this)
+                                    marker.position = point
+                                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                                    marker.title = it.centerName
+                                    marker.snippet = it.address
+                                    overlays.add(marker)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
+
+                    // Static Coordinates Info below map
+                    Text(
+                        text = "Exact Coordinates: ${it.latitude}, ${it.longitude}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    )
                 }
 
-                // Bottom spacer for FAB area
                 Spacer(modifier = Modifier.height(100.dp))
             }
         } ?: run {
-            // Loading/Empty state
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        strokeWidth = 3.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(48.dp), strokeWidth = 3.dp)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Loading vote center details...",
@@ -353,36 +322,16 @@ private fun InformationCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            // Card Header
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
+                Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 20.sp
-                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-
-            // Divider
-            Divider(
-                thickness = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            // Card Content
+            Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(bottom = 16.dp))
             content()
         }
     }
@@ -390,45 +339,27 @@ private fun InformationCard(
 
 @Composable
 private fun InfoRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    iconColor: Color
+    icon: ImageVector, label: String, value: String, iconColor: Color
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconColor,
-            modifier = Modifier.size(20.dp)
-        )
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 12.sp
-                ),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium, fontSize = 12.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Normal,
-                    fontSize = 16.sp
-                ),
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal, fontSize = 16.sp),
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
 
-// Helper function to find activity from context
 fun android.content.Context.findActivity(): android.app.Activity? = when (this) {
     is android.app.Activity -> this
     is android.content.ContextWrapper -> baseContext.findActivity()
