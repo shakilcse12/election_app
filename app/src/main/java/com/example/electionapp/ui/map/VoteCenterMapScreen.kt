@@ -82,7 +82,9 @@ fun VoteCenterMapScreen(
 
     val searchResults = remember(searchQuery, voteCenters) {
         if (searchQuery.isBlank()) emptyList()
-        else voteCenters.filter { it.entity.centerName.contains(searchQuery, ignoreCase = true) }.take(5)
+        else voteCenters.filter {
+            it.entity.centerNumber.toString().contains(searchQuery) ||
+            it.entity.centerName.contains(searchQuery, ignoreCase = true) }.take(5)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -125,7 +127,12 @@ fun VoteCenterMapScreen(
         Column(modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp, start = 16.dp, end = 16.dp)) {
             DockedSearchBar(
                 query = searchQuery,
-                onQueryChange = { searchQuery = it },
+                onQueryChange = {
+                    searchQuery = it
+                    viewModel.onSearchChange(it) // ✅ FIX
+                },
+
+                        //onQueryChange = { searchQuery = it },
                 onSearch = { isSearchActive = false; focusManager.clearFocus() },
                 active = isSearchActive,
                 onActiveChange = { isSearchActive = it },

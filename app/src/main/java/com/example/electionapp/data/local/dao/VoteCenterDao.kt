@@ -30,16 +30,18 @@ interface VoteCenterDao {
      * 4. Center Number (via CAST)
      * 5. Presiding Officer Phone (Added for convenience)
      */
+
     @Query("""
-        SELECT * FROM vote_centers 
-        WHERE centerName LIKE '%' || :query || '%' 
-        OR presidingOfficerName LIKE '%' || :query || '%' 
-        OR address LIKE '%' || :query || '%'
-        OR presidingOfficerPhone LIKE '%' || :query || '%'
-        OR CAST(centerNumber AS TEXT) LIKE '%' || :query || '%'
-        ORDER BY centerNumber ASC
-    """)
-    fun searchCenters(query: String): Flow<List<VoteCenterEntity>>
+    SELECT * FROM vote_centers 
+    WHERE 
+        centerName LIKE :searchTerm 
+        OR presidingOfficerName LIKE :searchTerm 
+        OR address LIKE :searchTerm
+        OR CAST(centerNumber AS TEXT) LIKE :searchTerm
+    ORDER BY centerNumber ASC
+""")
+    fun searchCenters(searchTerm: String): Flow<List<VoteCenterEntity>>
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(center: VoteCenterEntity)

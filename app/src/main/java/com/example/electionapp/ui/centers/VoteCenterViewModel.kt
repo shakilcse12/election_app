@@ -19,22 +19,26 @@ class VoteCenterViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    /**
-     * Production Ready Flow:
-     * 1. Debounce (wait for typing to stop)
-     * 2. Distinct (don't search same thing twice)
-     * 3. Fetch Data
-     * 4. Map to UI Items using .toUiItem()
-     */
     @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     val voteCenters: StateFlow<List<VoteCenterItem>> = _searchQuery
         .debounce(300L)
         .distinctUntilChanged()
         .flatMapLatest { query ->
-            repository.getVoteCenters(query)
+            // No changes to logic: Repository handles the decision between getAll() and searchCenters()
+            android.util.Log.d("SEARCH", "Querying for: $query") // Diagnostic Log
+            val sanitizedQuery = query.trim()
+            repository.getVoteCenters(sanitizedQuery)
+                .map { centers ->
+                    android.util.Log.d("SEARCH_DEBUG", "Found ${centers.size} centers")
+                    // Log first few centers to see their numbers
+                    centers.take(3).forEach { center ->
+                        android.util.Log.d("SEARCH_DEBUG", "Center #${center.centerNumber}: ${center.centerName}")
+                    }
+                    centers
+                }
         }
         .map { entities ->
-            entities.map { it.toUiItem() } // Using the Mapper here!
+            entities.map { it.toUiItem() }
         }
         .stateIn(
             scope = viewModelScope,
