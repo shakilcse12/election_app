@@ -7,6 +7,7 @@ import android.net.Uri
 import android.view.View
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,6 +57,9 @@ fun VoteCenterMapScreen(
             locationOverlay.enableMyLocation()
         }
     }
+
+    var selectedAddress by remember { mutableStateOf<String?>(null) }
+    val fabBottomPadding = if (selectedAddress != null) 96.dp else 20.dp
 
     LaunchedEffect(Unit) {
         locationPermissionLauncher.launch(
@@ -108,6 +113,7 @@ fun VoteCenterMapScreen(
                     marker.snippet = "${center.entity.address}\n\n.Tap here for Directions"
 
                     marker.setOnMarkerClickListener { m, _ ->
+                        selectedAddress = center.entity.address
                         m.showInfoWindow()
                         true
                     }
@@ -129,13 +135,16 @@ fun VoteCenterMapScreen(
                 query = searchQuery,
                 onQueryChange = {
                     searchQuery = it
+                    isSearchActive = it.isNotBlank()
                     viewModel.onSearchChange(it) // ✅ FIX
                 },
 
                         //onQueryChange = { searchQuery = it },
                 onSearch = { isSearchActive = false; focusManager.clearFocus() },
                 active = isSearchActive,
-                onActiveChange = { isSearchActive = it },
+                onActiveChange = { active ->
+                    isSearchActive = active && searchQuery.isNotBlank()
+                },
                 placeholder = { Text("Search Centers...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
@@ -154,6 +163,7 @@ fun VoteCenterMapScreen(
                                 searchQuery = item.entity.centerName
                                 isSearchActive = false
                                 focusManager.clearFocus()
+                                selectedAddress = item.entity.address
                                 mapView.controller.animateTo(GeoPoint(item.entity.latitude, item.entity.longitude), 17.0, 1000L)
                             }
                         )
@@ -166,16 +176,53 @@ fun VoteCenterMapScreen(
         FloatingActionButton(
             onClick = {
                 locationOverlay.myLocation?.let {
+                    selectedAddress = null
                     mapView.controller.animateTo(it, 17.0, 1000L)
                 } ?: run {
                     locationOverlay.enableMyLocation()
                 }
             },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(
+                end = 20.dp,
+                bottom = fabBottomPadding
+            ),
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ) {
             Icon(Icons.Default.LocationOn, contentDescription = "My Location")
         }
+        AnimatedVisibility(
+            visible = selectedAddress != null,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(6.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = selectedAddress ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
     }
 }
 

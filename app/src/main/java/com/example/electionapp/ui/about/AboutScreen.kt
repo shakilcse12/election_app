@@ -44,8 +44,18 @@ fun AboutScreen() {
             ) {
                 item {
                     AboutMemberCard(
+                        role = "Special Thanks",
+                        name = "Sharifa Hoque",
+                        designation = "District Commissioner",
+                        location = "Tangail, Bangladesh",
+                        icon = Icons.Default.ThumbUp,
+                        gradient = Brush.linearGradient(listOf(Color(0xFFEB3349), Color(0xFFF45C43)))
+                    )
+                }
+                item {
+                    AboutMemberCard(
                         role = "App Concept",
-                        name = "Md. Abdullah Al Roni",
+                        name = "Md. Abdullah Al Rony",
                         designation = "Upazila Nirbahi Officer",
                         location = "Sakhipur, Tangail, Bangladesh",
                         icon = Icons.Default.Info,
@@ -70,16 +80,6 @@ fun AboutScreen() {
                         location = "Sakhipur, Tangail- Bangladesh",
                         icon = Icons.Default.Face,
                         gradient = Brush.linearGradient(listOf(Color(0xFFFF5F6D), Color(0xFFFFC371)))
-                    )
-                }
-                item {
-                    AboutMemberCard(
-                        role = "Special Thanks",
-                        name = "Sharifa Hoque",
-                        designation = "District Commissioner",
-                        location = "Tangail, Bangladesh",
-                        icon = Icons.Default.Favorite,
-                        gradient = Brush.linearGradient(listOf(Color(0xFFEB3349), Color(0xFFF45C43)))
                     )
                 }
             }
