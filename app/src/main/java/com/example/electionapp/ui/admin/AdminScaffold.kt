@@ -50,7 +50,7 @@ fun AdminScaffold(
                     icon = {
                         Icon(Icons.Default.Done, contentDescription = "Law")
                     },
-                    label = { Text("Law") }
+                    label = { Text("Contacts") }
                 )
             }
         }
