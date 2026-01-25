@@ -209,12 +209,12 @@ fun VoteCenterCard(
                     .background(Color(0xFFF9F9F9), RoundedCornerShape(8.dp))
                     .padding(10.dp)
             ) {
-                Text(
+                /*Text(
                     text = "Others: ${center.otherOfficers}",
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = banglaFont),
                     color = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(4.dp))*/
                 Text(
                     text = center.address,
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = banglaFont),

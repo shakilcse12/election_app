@@ -1,7 +1,16 @@
 package com.example.electionapp.ui.navigation
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.electionapp.ui.about.AboutScreen
 import com.example.electionapp.ui.admin.LawPlaceholderScreen
+import com.example.electionapp.ui.auth.AuthViewModel
 import com.example.electionapp.ui.auth.LoginScreen
 import com.example.electionapp.ui.centers.VoteCenterDetailsScreen
 import com.example.electionapp.ui.centers.VoteCenterListScreen
@@ -83,15 +93,40 @@ fun AppNavGraph(
         /* ---------- ADMIN ROOT ---------- */
 
         composable("admin_root") {
+            val authViewModel: AuthViewModel = hiltViewModel()
             val adminNavController = rememberNavController()
+            var showLogoutDialog by remember { mutableStateOf(false) }
+
+            // LOGOUT CONFIRMATION DIALOG
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    title = { Text("Confirm Logout") },
+                    text = { Text("Are you sure you want to log out of the admin panel?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showLogoutDialog = false
+                            authViewModel.logout() // Clear ViewModel State
+                            navController.navigate(BottomNavItem.Centers.route) {
+                                popUpTo("admin_root") { inclusive = true }
+                            }
+                        }) {
+                            Text("Logout", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
 
             AdminNavGraph(
                 navController = adminNavController,
                 mainNavController = navController, // Pass the parent controller here!
                 onLogout = {
-                    navController.navigate(BottomNavItem.Centers.route) {
-                        popUpTo("admin_root") { inclusive = true }
-                    }
+                    showLogoutDialog = true
                 }
             )
         }
