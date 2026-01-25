@@ -44,11 +44,11 @@ fun AboutScreen() {
             ) {
                 item {
                     AboutMemberCard(
-                        role = "Special Thanks",
+                        role = "Inspiration",
                         name = "Sharifa Hoque",
-                        designation = "District Commissioner",
+                        designation = "Deputy Commissioner",
                         location = "Tangail, Bangladesh",
-                        icon = Icons.Default.ThumbUp,
+                        icon = Icons.Default.EmojiEvents,
                         gradient = Brush.linearGradient(listOf(Color(0xFFEB3349), Color(0xFFF45C43)))
                     )
                 }
@@ -78,7 +78,7 @@ fun AboutScreen() {
                         name = "Hashib Mahmud",
                         designation = "Upazila ICT Officer",
                         location = "Sakhipur, Tangail- Bangladesh",
-                        icon = Icons.Default.Face,
+                        icon = Icons.Default.AutoAwesome,
                         gradient = Brush.linearGradient(listOf(Color(0xFFFF5F6D), Color(0xFFFFC371)))
                     )
                 }

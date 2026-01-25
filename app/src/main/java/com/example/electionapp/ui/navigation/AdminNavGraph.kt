@@ -34,9 +34,9 @@ fun AdminNavGraph(
                     navController.navigate("admin/law")
                 },
                 topBar = {
-                    AdminTopBar(onLogout = onLogout)
+                    AdminTopBar(title = "Admin Dashboard", onLogout = onLogout)
                 }
-            ) { padding, _ ->   // ✅ FIX HERE
+            ) { padding, _ ->
                 VoteCenterListScreen(
                     modifier = Modifier.padding(padding), // APPLY PADDING HERE
                     isAdmin = true, // KEY CHANGE
@@ -58,9 +58,10 @@ fun AdminNavGraph(
                 onAdd = { navController.navigate("admin/add") },
                 onLaw = { /* already here */ },
                 topBar = {
-                    AdminTopBar(onLogout = onLogout)
+                    // Pass "Contacts" as the title here
+                    AdminTopBar(title = "Contacts", onLogout = onLogout)
                 }
-            ) { padding, snackbarHostState ->   // ✅ FIX HERE
+            ) { padding, snackbarHostState ->
                 LawPlaceholderScreen()
             }
         }

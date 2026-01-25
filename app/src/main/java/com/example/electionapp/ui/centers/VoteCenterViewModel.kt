@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class VoteCenterViewModel @Inject constructor(
-    private val repository: VoteCenterRepository
+    internal val repository: VoteCenterRepository
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")

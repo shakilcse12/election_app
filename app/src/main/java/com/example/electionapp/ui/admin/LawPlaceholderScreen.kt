@@ -16,9 +16,17 @@ fun LawPlaceholderScreen() {
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Law Tab Placeholder",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Official Contacts",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Directory of election officials and support.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }

@@ -3,12 +3,10 @@ package com.example.electionapp.ui.admin
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 
 @Composable
 fun AdminScaffold(
@@ -48,7 +46,7 @@ fun AdminScaffold(
                     selected = selectedIndex == 2,
                     onClick = onLaw,
                     icon = {
-                        Icon(Icons.Default.Done, contentDescription = "Law")
+                        Icon(Icons.Default.Contacts, contentDescription = "Law")
                     },
                     label = { Text("Contacts") }
                 )

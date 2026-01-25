@@ -208,7 +208,7 @@ fun VoteCenterDetailsScreen(
                     }
 
                     if (it.otherOfficers.isNotBlank()) {
-                        InformationCard(
+                       /* InformationCard(
                             title = "Support Staff",
                             icon = Icons.Default.Person,
                             iconColor = MaterialTheme.colorScheme.secondary
@@ -219,7 +219,7 @@ fun VoteCenterDetailsScreen(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
-                        }
+                        }*/
                     }
 
                     InformationCard(
