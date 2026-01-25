@@ -62,7 +62,7 @@ fun AdminNavGraph(
                     AdminTopBar(title = "Contacts", onLogout = onLogout)
                 }
             ) { padding, snackbarHostState ->
-                LawPlaceholderScreen()
+                OfficialContactsScreen()
             }
         }
 
