@@ -60,7 +60,7 @@ fun AppNavGraph(
 
         composable(BottomNavItem.Law.route) {
             //LawPlaceholderScreen()
-            OfficialContactsScreen()
+            OfficialContactsScreen(isAdmin = false)
         }
 
         composable(BottomNavItem.About.route) {

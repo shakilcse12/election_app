@@ -73,7 +73,9 @@ val officialContacts = listOf(
 // --- MAIN SCREEN ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OfficialContactsScreen() {
+fun OfficialContactsScreen(
+    isAdmin: Boolean = false // Added parameter to handle the Admin case
+) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
 
@@ -93,7 +95,8 @@ fun OfficialContactsScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(backgroundGradient)) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize() // --- ADDED TOP PADDING FOR ADMIN CASE ---
+            .padding(top = if (isAdmin) 56.dp else 0.dp)) {
             // Search Header
             Surface(color = Color.Transparent, modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
