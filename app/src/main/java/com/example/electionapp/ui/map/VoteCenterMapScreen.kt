@@ -3,8 +3,8 @@ package com.example.electionapp.ui.map
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.PorterDuff
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.view.View
@@ -12,15 +12,13 @@ import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.electionapp.ui.centers.VoteCenterViewModel
+import kotlinx.coroutines.delay
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -45,8 +45,10 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.InfoWindow
+import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,43 +59,55 @@ fun VoteCenterMapScreen(
     val focusManager = LocalFocusManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    val markerCache = remember { mutableMapOf<Int, Marker>() }
+    var hasPerformedInitialZoom by remember { mutableStateOf(false) }
+
+    // Search States
+    var searchQuery by remember { mutableStateOf("") }
+    var searchActive by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         Configuration.getInstance().userAgentValue = context.packageName
     }
 
-    val allVoteCenters by viewModel.voteCenters.collectAsState()
+    val voteCenters by viewModel.voteCenters.collectAsState()
+    var selectedCenter by remember { mutableStateOf<GeoPoint?>(null) }
     var selectedAddress by remember { mutableStateOf<String?>(null) }
-    // Keeping track of coordinates for the bottom bar button
-    var selectedCoords by remember { mutableStateOf<GeoPoint?>(null) }
 
-    val customMarkerIcon = remember {
-        ContextCompat.getDrawable(context, android.R.drawable.ic_menu_mylocation)?.apply {
-            setColorFilter(Color.parseColor("#3F51B5"), PorterDuff.Mode.SRC_IN)
-        }
-    }
+    val bottomSheetHeight = if (selectedAddress != null) 120.dp else 0.dp
+    val fabOffset by animateDpAsState(
+        targetValue = bottomSheetHeight + 16.dp,
+        label = "fab-offset"
+    )
 
     val mapView = remember {
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            isHorizontalMapRepetitionEnabled = false
+            isVerticalMapRepetitionEnabled = false
         }
     }
 
+    val locationOverlay = remember {
+        MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
+    }
+
+    // Handles map interaction to close search
     val mapEventsOverlay = remember {
         MapEventsOverlay(object : MapEventsReceiver {
             override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
                 InfoWindow.closeAllInfoWindowsOn(mapView)
                 selectedAddress = null
-                selectedCoords = null
+                selectedCenter = null
+
+                // Standard behavior: Close search on map tap
+                searchActive = false
                 focusManager.clearFocus()
                 return true
             }
-            override fun longPressHelper(p: GeoPoint?): Boolean = false
+            override fun longPressHelper(p: GeoPoint?) = false
         })
-    }
-
-    val locationOverlay = remember {
-        MyLocationNewOverlay(GpsMyLocationProvider(context), mapView)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -101,113 +115,109 @@ fun VoteCenterMapScreen(
             when (event) {
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
                 Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-                else -> {}
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            InfoWindow.closeAllInfoWindowsOn(mapView)
+            locationOverlay.disableMyLocation()
             mapView.onDetach()
         }
     }
 
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true) {
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { perms ->
+        if (perms[Manifest.permission.ACCESS_FINE_LOCATION] == true) locationOverlay.enableMyLocation()
+    }
+
+    LaunchedEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
+        } else {
             locationOverlay.enableMyLocation()
         }
     }
 
-    val fabBottomPadding = if (selectedAddress != null) 100.dp else 24.dp
+    LaunchedEffect(searchQuery) { viewModel.onSearchChange(searchQuery) }
 
-    LaunchedEffect(Unit) {
-        locationPermissionLauncher.launch(
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-        )
-    }
-
-    LaunchedEffect(allVoteCenters) {
-        if (allVoteCenters.isNotEmpty()) {
-            mapView.overlays.filterIsInstance<Marker>().forEach { mapView.overlays.remove(it) }
-
-            allVoteCenters.forEach { center ->
-                val marker = Marker(mapView).apply {
-                    position = GeoPoint(center.entity.latitude, center.entity.longitude)
-                    title = center.entity.centerName
-                    snippet = center.entity.address
-                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-
-                    infoWindow = CustomInfoWindow(mapView) {
-                        openDirections(context, center.entity.latitude, center.entity.longitude)
-                    }
-
-                    setOnMarkerClickListener { m, _ ->
-                        selectedAddress = center.entity.address
-                        selectedCoords = m.position
-                        InfoWindow.closeAllInfoWindowsOn(mapView)
-                        m.showInfoWindow()
-                        mapView.controller.animateTo(m.position)
-                        true
-                    }
-                }
-                mapView.overlays.add(marker)
-            }
-
-            val points = allVoteCenters.map { GeoPoint(it.entity.latitude, it.entity.longitude) }
-            val boundingBox = BoundingBox.fromGeoPoints(points)
-            mapView.post {
-                mapView.zoomToBoundingBox(boundingBox.increaseByScale(1.3f), true)
-            }
-            mapView.invalidate()
-        }
-    }
-
-    var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
-
-    val searchResults = remember(searchQuery, allVoteCenters) {
+    val searchResults = remember(searchQuery, voteCenters) {
         if (searchQuery.isBlank()) emptyList()
-        else allVoteCenters.filter {
-            it.entity.centerNumber.toString().contains(searchQuery) ||
-                    it.entity.centerName.contains(searchQuery, ignoreCase = true)
+        else voteCenters.filter {
+            it.entity.centerName.contains(searchQuery, true) || it.entity.centerNumber.toString().contains(searchQuery)
         }.take(5)
+    }
+
+    LaunchedEffect(voteCenters) {
+        if (voteCenters.isNotEmpty()) {
+            delay(50)
+            voteCenters.forEach { center ->
+                if (center.entity.id !in markerCache) {
+                    val marker = Marker(mapView).apply {
+                        position = GeoPoint(center.entity.latitude, center.entity.longitude)
+                        title = "${center.entity.centerNumber}. ${center.entity.centerName}"
+                        snippet = center.entity.address
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                        infoWindow = CustomInfoWindow(mapView) {
+                            openDirections(context, center.entity.latitude, center.entity.longitude)
+                        }
+                        setOnMarkerClickListener { m, _ ->
+                            // Close search when interacting with markers
+                            searchActive = false
+                            focusManager.clearFocus()
+
+                            selectedAddress = center.entity.address
+                            selectedCenter = m.position
+                            InfoWindow.closeAllInfoWindowsOn(mapView)
+                            m.showInfoWindow()
+                            mapView.controller.animateTo(m.position)
+                            true
+                        }
+                    }
+                    mapView.overlays.add(marker)
+                    markerCache[center.entity.id] = marker
+                }
+            }
+            if (!mapView.overlays.contains(locationOverlay)) mapView.overlays.add(locationOverlay)
+
+            if (!hasPerformedInitialZoom) {
+                val points = voteCenters.map { GeoPoint(it.entity.latitude, it.entity.longitude) }
+                if (points.isNotEmpty()) {
+                    val bbox = BoundingBox.fromGeoPoints(points)
+                    mapView.post { mapView.zoomToBoundingBox(bbox.increaseByScale(1.3f), true) }
+                    hasPerformedInitialZoom = true
+                }
+            }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = {
-                mapView.apply {
-                    locationOverlay.enableMyLocation()
-                    if (!overlays.contains(mapEventsOverlay)) {
-                        overlays.add(0, mapEventsOverlay)
-                    }
-                    if (!overlays.contains(locationOverlay)) {
-                        overlays.add(locationOverlay)
-                    }
-                }
-            },
-            update = { }
+                if (!mapView.overlays.contains(mapEventsOverlay)) mapView.overlays.add(0, mapEventsOverlay)
+                mapView
+            }
         )
 
+        // Standard Material 3 Search Bar
         Column(modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp, start = 16.dp, end = 16.dp)) {
             DockedSearchBar(
                 query = searchQuery,
-                onQueryChange = {
-                    searchQuery = it
-                    isSearchActive = it.isNotBlank()
+                onQueryChange = { searchQuery = it; searchActive = it.isNotBlank() },
+                onSearch = {
+                    searchActive = false
+                    focusManager.clearFocus()
                 },
-                onSearch = { isSearchActive = false; focusManager.clearFocus() },
-                active = isSearchActive,
-                onActiveChange = { active -> isSearchActive = active },
-                placeholder = { Text("Search Centers...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                active = searchActive,
+                onActiveChange = { searchActive = it },
+                placeholder = { Text("Search centers") },
+                leadingIcon = { Icon(Icons.Default.Search, null) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = ""; isSearchActive = false }) {
-                            Icon(Icons.Default.Close, contentDescription = null)
-                        }
+                        IconButton(onClick = { searchQuery = "" }) { Icon(Icons.Default.Close, null) }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -218,21 +228,20 @@ fun VoteCenterMapScreen(
                             headlineContent = { Text(item.entity.centerName) },
                             supportingContent = { Text(item.entity.address) },
                             modifier = Modifier.clickable {
-                                searchQuery = item.entity.centerName
-                                isSearchActive = false
-                                focusManager.clearFocus()
-                                selectedAddress = item.entity.address
-                                selectedCoords = GeoPoint(item.entity.latitude, item.entity.longitude)
-
                                 val point = GeoPoint(item.entity.latitude, item.entity.longitude)
-                                mapView.controller.animateTo(point, 18.0, 1000L)
+                                selectedCenter = point
+                                selectedAddress = item.entity.address
+
+                                // Reset search state
+                                searchQuery = ""
+                                searchActive = false
+                                focusManager.clearFocus()
 
                                 InfoWindow.closeAllInfoWindowsOn(mapView)
-
-                                mapView.overlays.filterIsInstance<Marker>().find {
-                                    it.position.latitude == item.entity.latitude &&
-                                            it.position.longitude == item.entity.longitude
-                                }?.showInfoWindow()
+                                markerCache[item.entity.id]?.let {
+                                    it.showInfoWindow()
+                                    mapView.controller.animateTo(point, 18.0, 800L)
+                                }
                             }
                         )
                     }
@@ -240,60 +249,88 @@ fun VoteCenterMapScreen(
             }
         }
 
-        FloatingActionButton(
-            onClick = {
-                locationOverlay.myLocation?.let {
-                    selectedAddress = null
-                    selectedCoords = null
-                    InfoWindow.closeAllInfoWindowsOn(mapView)
-                    mapView.controller.animateTo(it, 17.0, 1000L)
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = fabBottomPadding),
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+        // Action Buttons
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 20.dp, bottom = fabOffset),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(Icons.Default.LocationOn, contentDescription = "My Location")
+            // Reset Zoom FAB
+            AnimatedVisibility(visible = hasPerformedInitialZoom) {
+                FloatingActionButton(
+                    onClick = {
+                        searchActive = false
+                        focusManager.clearFocus()
+                        selectedAddress = null
+                        selectedCenter = null
+                        InfoWindow.closeAllInfoWindowsOn(mapView)
+                        val points = voteCenters.map { GeoPoint(it.entity.latitude, it.entity.longitude) }
+                        if (points.isNotEmpty()) {
+                            val bbox = BoundingBox.fromGeoPoints(points)
+                            mapView.zoomToBoundingBox(bbox.increaseByScale(1.3f), true)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Icon(Icons.Default.ZoomOutMap, "Reset Zoom")
+                }
+            }
+
+            // My Location FAB
+            FloatingActionButton(
+                onClick = {
+                    searchActive = false
+                    focusManager.clearFocus()
+                    locationOverlay.myLocation?.let {
+                        selectedAddress = null
+                        selectedCenter = null
+                        InfoWindow.closeAllInfoWindowsOn(mapView)
+                        mapView.controller.animateTo(it, 17.0, 800L)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(Icons.Default.MyLocation, "My Location")
+            }
         }
 
+        // Details Card
         AnimatedVisibility(
             visible = selectedAddress != null,
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                elevation = CardDefaults.cardElevation(6.dp)
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(8.dp)
             ) {
-                Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = selectedAddress ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(selectedAddress ?: "", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 
-                    // --- ADDED DIRECTION BUTTON ---
-                    IconButton(onClick = {
-                        selectedCoords?.let {
-                            openDirections(context, it.latitude, it.longitude)
+                        val myLoc = locationOverlay.myLocation
+                        if (myLoc != null && selectedCenter != null) {
+                            val distKm = myLoc.distanceToAsDouble(selectedCenter) / 1000.0
+                            val timeMins = (distKm / 40.0 * 60.0).toInt().coerceAtLeast(1)
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = String.format(Locale.getDefault(), "%.1f km", distKm),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(text = "• Est. $timeMins min drive", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+                            }
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Directions,
-                            contentDescription = "Directions",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
                     }
-
-                    IconButton(onClick = {
-                        selectedAddress = null
-                        selectedCoords = null
-                        InfoWindow.closeAllInfoWindowsOn(mapView)
-                    }) {
-                        Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                    IconButton(onClick = { selectedCenter?.let { openDirections(context, it.latitude, it.longitude) } }) {
+                        Icon(Icons.Default.Directions, null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(onClick = { selectedAddress = null; selectedCenter = null; InfoWindow.closeAllInfoWindowsOn(mapView) }) {
+                        Icon(Icons.Default.Close, null)
                     }
                 }
             }
@@ -301,55 +338,66 @@ fun VoteCenterMapScreen(
     }
 }
 
+// CustomInfoWindow (Blue number fix)
 class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
-    org.osmdroid.views.overlay.infowindow.MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
+    MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
 
     override fun onOpen(item: Any?) {
         super.onOpen(item)
+        val marker = item as? Marker ?: return
         mView.isClickable = true
-        val background = GradientDrawable().apply {
+        mView.background = GradientDrawable().apply {
             setColor(Color.WHITE)
             cornerRadius = 32f
             setStroke(2, Color.LTGRAY)
         }
-        mView.background = background
 
         val titleView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
-        val descriptionView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
+        val descView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
 
         titleView?.apply {
-            setTextColor(Color.DKGRAY)
+            setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
+            text = marker.title
             setPadding(20, 10, 20, 0)
-            text = "${(item as Marker).title}"
         }
 
-        descriptionView?.apply {
+        descView?.apply {
             setTextColor(Color.GRAY)
+            text = "${marker.snippet}\n\n📍 Tap for Directions"
             setPadding(20, 5, 20, 20)
-            text = "${(item as Marker).snippet}\n\n📍 Tap below Address Bar for Directions"
         }
 
-        val listener = View.OnClickListener {
-            onDirectionsClick()
-            close()
-        }
-
-        mView.setOnClickListener(listener)
-        titleView?.setOnClickListener(listener)
-        descriptionView?.setOnClickListener(listener)
+        mView.setOnClickListener { onDirectionsClick(); close() }
     }
 }
 
 private fun openDirections(context: Context, lat: Double, lon: Double) {
-    val directionsUri = "http://maps.google.com/maps?daddr=$lat,$lon"
-    val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(directionsUri)).apply {
+    // This URI opens the "Directions" screen, letting the user choose the mode (Walk, Bike, Drive, etc.)
+    val directionsUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
+
+    val mapIntent = Intent(Intent.ACTION_VIEW, directionsUri).apply {
+        // Attempt to launch the Google Maps app specifically
         setPackage("com.google.android.apps.maps")
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
+
     try {
+        // If Google Maps is installed, it will open the directions selection screen
         context.startActivity(mapIntent)
     } catch (e: Exception) {
-        val fallbackUri = Uri.parse("geo:0,0?q=$lat,$lon")
-        context.startActivity(Intent(Intent.ACTION_VIEW, fallbackUri))
+        // Fallback: If Google Maps app is missing, use a generic geo intent
+        // which will offer a browser or any other installed map app
+        val fallbackUri = Uri.parse("geo:$lat,$lon?q=$lat,$lon")
+        val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
+        context.startActivity(fallbackIntent)
+    }
+}
+
+private fun openDrivingDirections(context: Context, lat: Double, lon: Double) {
+    try {
+        val uri = Uri.parse("google.navigation:q=$lat,$lon")
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri).setPackage("com.google.android.apps.maps"))
+    } catch (e: Exception) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lon?q=$lat,$lon")))
     }
 }
