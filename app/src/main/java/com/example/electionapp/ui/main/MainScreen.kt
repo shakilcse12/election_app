@@ -7,14 +7,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.electionapp.ui.centers.VoteCenterViewModel
 import com.example.electionapp.ui.navigation.AppNavGraph
 import com.example.electionapp.ui.navigation.BottomNavItem
-import com.example.electionapp.util.DummyData
-import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,14 +31,14 @@ fun MainScreen() {
     // Check if the current route is one of our main bottom nav tabs
     val showBottomBar = currentRoute in bottomNavItems.map { it.route }
     // Get the ViewModel
-    val viewModel: VoteCenterViewModel = hiltViewModel()
+    //val viewModel: VoteCenterViewModel = hiltViewModel()
     // One-time dummy data insertion
-    LaunchedEffect(Unit) {
+    /*LaunchedEffect(Unit) {
         val existingCenters = viewModel.repository.getAllCenters().first()
         if (existingCenters.isEmpty()) {
             viewModel.insertDummyData(DummyData.voteCenters())
         }
-    }
+    }*/
 
     Scaffold(
         bottomBar = {

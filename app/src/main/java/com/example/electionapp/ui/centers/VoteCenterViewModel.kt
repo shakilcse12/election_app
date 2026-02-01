@@ -49,6 +49,12 @@ class VoteCenterViewModel @Inject constructor(
     private val _selectedCenter = MutableStateFlow<VoteCenterEntity?>(null)
     val selectedCenter: StateFlow<VoteCenterEntity?> = _selectedCenter
 
+    init {
+        viewModelScope.launch {
+            repository.seedVoteCentersIfNeeded()
+        }
+    }
+
     fun onSearchChange(query: String) {
         _searchQuery.value = query
     }

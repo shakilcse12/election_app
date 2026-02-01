@@ -1,8 +1,14 @@
 package com.example.electionapp.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.electionapp.data.local.dao.VoteCenterDao
+import com.example.electionapp.data.local.entity.VoteCenterDto
 import com.example.electionapp.data.local.entity.VoteCenterEntity
+import com.example.electionapp.util.toEntity
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
+import com.google.gson.Gson
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -10,6 +16,7 @@ import javax.inject.Singleton
 
 @Singleton
 class VoteCenterRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val dao: VoteCenterDao
 ) {
 
@@ -79,5 +86,23 @@ class VoteCenterRepository @Inject constructor(
             presidingOfficerName = center.presidingOfficerName.trim(),
             address = center.address.trim()
         )
+    }
+
+    suspend fun seedVoteCentersIfNeeded() {
+        val prefs = context.getSharedPreferences("seed_prefs", Context.MODE_PRIVATE)
+
+        if (prefs.getBoolean("vote_centers_seeded", false)) return
+
+        val json = context.assets
+            .open("vote_centers.json")
+            .bufferedReader()
+            .use { it.readText() }
+
+        val type = object : TypeToken<List<VoteCenterDto>>() {}.type
+        val dtoList: List<VoteCenterDto> = Gson().fromJson(json, type)
+
+        dao.insertAll(dtoList.map { it.toEntity() })
+
+        prefs.edit().putBoolean("vote_centers_seeded", true).apply()
     }
 }

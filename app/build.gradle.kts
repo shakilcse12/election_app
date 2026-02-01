@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.firebase.crashlytics.buildtools)
     kapt(libs.androidx.room.compiler)  // This should work now
 
     /* ---------------- Dependency Injection (Hilt) ---------------- */
@@ -93,6 +94,8 @@ dependencies {
     /* ---------------- OpenStreetMap (OSM) ---------------- */
     // Added osm-droid for free map alternatives
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation(libs.google.gson)
+
 
     /* ---------------- Testing ---------------- */
     testImplementation(libs.junit)
