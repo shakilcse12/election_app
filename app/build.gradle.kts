@@ -30,14 +30,22 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.12"  // This matches Kotlin 2.0.0
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
     kapt {
         correctErrorTypes = true
@@ -90,9 +98,10 @@ dependencies {
     /* ---------------- Google Maps ---------------- */
     implementation(libs.google.maps.compose)
     implementation(libs.google.play.services.maps)
+    implementation(libs.google.play.services.location)
     /* ---------------- OpenStreetMap (OSM) ---------------- */
     // Added osm-droid for free map alternatives
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation(libs.osmdroid.android)
 
     /* ---------------- Testing ---------------- */
     testImplementation(libs.junit)
@@ -102,4 +111,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+kapt {
+    correctErrorTypes = true
 }

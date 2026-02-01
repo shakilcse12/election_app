@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.osmdroid.util.GeoPoint
 import javax.inject.Inject
 
 @HiltViewModel
@@ -48,6 +49,9 @@ class VoteCenterViewModel @Inject constructor(
 
     private val _selectedCenter = MutableStateFlow<VoteCenterEntity?>(null)
     val selectedCenter: StateFlow<VoteCenterEntity?> = _selectedCenter
+
+     var lastMapCenter: GeoPoint? = null
+        var lastZoomLevel: Double = 13.0
 
     fun onSearchChange(query: String) {
         _searchQuery.value = query

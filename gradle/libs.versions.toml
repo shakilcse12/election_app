@@ -1,29 +1,39 @@
 [versions]
 agp = "8.7.3"
 kotlin = "2.0.0"
-coreKtx = "1.16.0"
+coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.9.1"
-activityCompose = "1.10.1"
-composeBom = "2024.06.00"  # Updated from 2024.04.01
-navigationCompose = "2.8.0"
-lifecycleViewModelCompose = "2.8.4"
-lifecycleRuntimeCompose = "2.8.4"
+# Stable versions for API 35:
+lifecycleRuntimeKtx = "2.8.7"
+activityCompose = "1.9.3"       # Downgraded from 1.12.2 (Fixes Errors 1-10)
+composeBom = "2024.10.01"      # Updated to a stable October 2024 BOM
+navigationCompose = "2.8.5"    # Latest stable for API 35
+lifecycleViewModelCompose = "2.8.7"
+lifecycleRuntimeCompose = "2.8.7"
 room = "2.6.1"
 hiltAndroid = "2.51.1"
 hiltCompiler = "2.51.1"
 hiltNavigationCompose = "1.2.0"
-coroutinesAndroid = "1.8.1"
+coroutinesAndroid = "1.9.0"    # Stable version
 material = "1.12.0"
 appcompat = "1.7.1"
 constraintlayout = "2.2.1"
-navigationFragmentKtx = "2.9.6"
-navigationUiKtx = "2.9.6"
+navigationFragmentKtx = "2.8.5"
+navigationUiKtx = "2.8.5"
 datastore = "1.1.1"
-mapsCompose = "2.11.4"
-playServicesMaps = "18.2.0"
+
+# Google Maps - 6.4.1 is stable for API 35 and Kotlin 2.0
+mapsCompose = "6.4.1"
+playServicesMaps = "19.0.0"
+playServicesLocation = "21.3.0"
+osmdroid = "6.1.20"
+
+
+# Alternatively, if you want the latest maps-compose, you need:
+# mapsCompose = "7.0.0"
+# BUT you must update Compose BOM to 2024.08.00+ and other dependencies
 
 [libraries]
 # Core Android
@@ -62,27 +72,33 @@ androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navig
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
 
+# Datastore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
-#maps
+# Google Maps - IMPORTANT: Updated to compatible version
 google-maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
-
 google-play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
+google-play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
-
-# Test dependencies (unchanged)
+# Test dependencies
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+
+# Other Android libraries
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-navigation-fragment-ktx = { group = "androidx.navigation", name = "navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
 androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation-ui-ktx", version.ref = "navigationUiKtx" }
 
+# Add OSMDroid for OpenStreetMap (since you're using it in MapPickerScreen)
+# IMPORTANT: Add these if you're using OpenStreetMap#
+#osmdroid-android = "6.1.18"
+osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroid" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }  # Add this
+hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
