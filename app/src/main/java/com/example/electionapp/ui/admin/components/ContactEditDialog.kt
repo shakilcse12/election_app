@@ -40,7 +40,7 @@ fun ContactEditDialog(
         },
         confirmButton = {
             Button(onClick = {
-                onConfirm(OfficialContactEntity(contact?.id ?: 0, dept, name, rank, phone))
+                onConfirm(OfficialContactEntity(id = contact?.id ?: 0L, department = dept, name = name, designation = rank, phoneNumber = phone))
             }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
