@@ -31,13 +31,20 @@ val MIGRATION_2_34 = object : Migration(2, 3) {
 
 val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN booths TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN voterAreas TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN maleVoters TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN femaleVoters TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN hijraVoters TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN totalVoters TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE vote_centers ADD COLUMN remarks TEXT NOT NULL DEFAULT ''")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS official_contacts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                department TEXT NOT NULL,
+                name TEXT NOT NULL,
+                designation TEXT NOT NULL,
+                phoneNumber TEXT NOT NULL,
+                displayOrder INTEGER NOT NULL,
+                isActive INTEGER NOT NULL DEFAULT 1
+            )
+            """
+        )
     }
 }
+
 

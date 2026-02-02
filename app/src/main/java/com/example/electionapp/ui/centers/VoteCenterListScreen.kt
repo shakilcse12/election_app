@@ -136,7 +136,8 @@ fun VoteCenterListScreen(
                 Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp)) {
                     SearchBar(
                         query = searchQuery,
-                        onQueryChange = { viewModel.onSearchChange(it) }
+                        onQueryChange = { viewModel.onSearchChange(it) },
+                        placeholder = "Search by name, number or address"
                     )
                 }
 

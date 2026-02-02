@@ -3,6 +3,7 @@ package com.example.electionapp.di
 import android.content.Context
 import androidx.room.Room
 import com.example.electionapp.data.local.AppDatabase
+import com.example.electionapp.data.local.dao.OfficialContactDao
 import com.example.electionapp.data.local.dao.VoteCenterDao
 import com.example.electionapp.data.local.db.MIGRATION_3_4
 import dagger.Module
@@ -35,4 +36,8 @@ object DatabaseModule {
     fun provideVoteCenterDao(db: AppDatabase): VoteCenterDao {
         return db.voteCenterDao()
     }
+
+    @Provides
+    fun provideOfficialContactDao(db: AppDatabase): OfficialContactDao =
+        db.officialContactDao()
 }

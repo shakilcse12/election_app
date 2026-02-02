@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,8 +25,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.electionapp.data.local.entity.OfficialContactEntity
+import com.example.electionapp.ui.admin.components.ContactEditDialog
+import com.example.electionapp.ui.admin.model.ContactPerson
+import com.example.electionapp.ui.admin.model.Department
+import com.example.electionapp.ui.components.SearchBar
 
-// --- DATA MODELS ---
+/*// --- DATA MODELS ---
 data class ContactPerson(
     val name: String,
     val designation: String,
@@ -37,9 +44,9 @@ data class Department(
     val icon: ImageVector,
     val accentColor: Color,
     val contacts: List<ContactPerson>
-)
+)*/
 
-// --- MOCK DATA ---
+/*// --- MOCK DATA ---
 val officialContacts = listOf(
     Department(
         title = "Bangladesh Army",
@@ -68,80 +75,94 @@ val officialContacts = listOf(
             ContactPerson("Maj. S.M. Nazmul", "Intelligence Lead", "01911555555")
         )
     )
-)
+)*/
 
 // --- MAIN SCREEN ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfficialContactsScreen(
-    isAdmin: Boolean = false // Added parameter to handle the Admin case
+    isAdmin: Boolean,
+    viewModel: AdminContactsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val departments by viewModel.departments.collectAsState(initial = emptyList())
     var searchQuery by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
 
-    // ✅ Matches AboutScreen Gradient
+    // Filtering logic preserved from previous version
+    val filteredDepartments = remember(searchQuery, departments) {
+        if (searchQuery.isBlank()) departments
+        else departments.map { dept ->
+            dept.copy(
+                contacts = dept.contacts.filter {
+                    it.name.contains(searchQuery, true) ||
+                            it.designation.contains(searchQuery, true)
+                }
+            )
+        }.filter { it.contacts.isNotEmpty() }
+    }
+
+    // 1. Define the background gradient brush (matched to VoteCenterListScreen)
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFF8F9FA), Color(0xFFE9ECEF))
     )
 
-    val filteredDepartments = remember(searchQuery) {
-        if (searchQuery.isBlank()) officialContacts
-        else officialContacts.map { dept ->
-            dept.copy(contacts = dept.contacts.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.designation.contains(searchQuery, ignoreCase = true)
-            })
-        }.filter { it.contacts.isNotEmpty() }
-    }
-
-    Box(modifier = Modifier.fillMaxSize().background(backgroundGradient)) {
-        Column(modifier = Modifier.fillMaxSize() // --- ADDED TOP PADDING FOR ADMIN CASE ---
-            .padding(top = if (isAdmin) 56.dp else 0.dp)) {
-            // Search Header
-            Surface(color = Color.Transparent, modifier = Modifier.fillMaxWidth()) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
-                    placeholder = { Text("Search by name or designation...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        // Background Colors
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color(0xFFF8F8F8),
-
-                        // Border Colors set to Black
-                        focusedBorderColor = Color.Black,
-                        unfocusedBorderColor = Color.Black,
-
-                        // Cursor and Text colors
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = Color.Transparent, // 2. Transparent Scaffold
+            topBar = {
+                TopAppBar(
+                    title = { Text("Official Contacts", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
                 )
             }
-
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                modifier = Modifier.fillMaxSize()
+        ) { paddingValues ->
+            // 3. Wrap content in Box with Gradient Background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(backgroundGradient)
+                    .padding(paddingValues)
             ) {
-                items(filteredDepartments) { dept ->
-                    DepartmentCard(dept = dept) { phone ->
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
-                        context.startActivity(intent)
+                Column(modifier = Modifier.fillMaxSize()) {
+
+                    // 4. Integrated SearchBar (Matches VoteCenterListScreen Layout)
+                    Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp)) {
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            placeholder = "Search by name or rank"
+                        )
+                    }
+
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (filteredDepartments.isEmpty() && searchQuery.isNotEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No results found for \"$searchQuery\"",
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        } else {
+                            items(filteredDepartments) { dept ->
+                                DepartmentCard(dept) { phone ->
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
-                item { Spacer(modifier = Modifier.height(100.dp)) }
             }
         }
     }
