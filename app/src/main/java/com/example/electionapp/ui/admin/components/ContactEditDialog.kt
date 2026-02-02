@@ -1,63 +1,48 @@
 package com.example.electionapp.ui.admin.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.electionapp.data.local.entity.OfficialContactEntity
+import com.example.electionapp.ui.admin.model.ContactPerson
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContactEditDialog(
-    initial: OfficialContactEntity?,
-    onSave: (OfficialContactEntity) -> Unit,
-    onDismiss: () -> Unit
+    contact: ContactPerson? = null,
+    onDismiss: () -> Unit,
+    onConfirm: (OfficialContactEntity) -> Unit
 ) {
-    var name by remember { mutableStateOf(initial?.name ?: "") }
-    var designation by remember { mutableStateOf(initial?.designation ?: "") }
-    var phone by remember { mutableStateOf(initial?.phoneNumber ?: "") }
-    var department by remember { mutableStateOf(initial?.department ?: "Bangladesh Army") }
+    var name by remember { mutableStateOf(contact?.name ?: "") }
+    var rank by remember { mutableStateOf(contact?.designation ?: "") }
+    var phone by remember { mutableStateOf(contact?.phoneNumber ?: "") }
+    var dept by remember { mutableStateOf(contact?.department ?: "Bangladesh Army") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(onClick = {
-                onSave(
-                    OfficialContactEntity(
-                        id = initial?.id ?: 0,
-                        department = department,
-                        name = name,
-                        designation = designation,
-                        phoneNumber = phone
-                    )
-                )
-            }) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-        title = { Text(if (initial == null) "Add Contact" else "Edit Contact") },
+        title = { Text(if (contact == null) "Add Official" else "Edit Details") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(name, { name = it }, label = { Text("Name") })
-                OutlinedTextField(designation, { designation = it }, label = { Text("Designation") })
-                OutlinedTextField(phone, { phone = it }, label = { Text("Phone") })
-                OutlinedTextField(department, { department = it }, label = { Text("Department") })
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+                OutlinedTextField(value = rank, onValueChange = { rank = it }, label = { Text("Rank / Designation") })
+                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("Phone Number") })
+
+                Text("Department", style = MaterialTheme.typography.labelMedium)
+                listOf("Bangladesh Army", "Bangladesh Police", "Border Guard (BGB)").forEach { item ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = dept == item, onClick = { dept = item })
+                        Text(item, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
             }
-        }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onConfirm(OfficialContactEntity(contact?.id ?: 0, dept, name, rank, phone))
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

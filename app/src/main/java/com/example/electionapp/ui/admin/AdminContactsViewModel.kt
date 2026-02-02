@@ -24,33 +24,37 @@ class AdminContactsViewModel @Inject constructor(
 
 
 
+    // Maps database entities to UI models including the unique ID
     val departments: StateFlow<List<Department>> =
         dao.observeContacts()
             .map { entities ->
-                entities
-                    .groupBy { it.department }
-                    .map { (department, contacts) ->
+                entities.groupBy { it.department }
+                    .map { (deptName, contacts) ->
                         Department(
-                            title = department,
-                            icon = departmentIcon(department),
-                            accentColor = departmentColor(department),
+                            title = deptName,
+                            icon = departmentIcon(deptName),
+                            accentColor = departmentColor(deptName),
                             contacts = contacts.map {
-                                ContactPerson(
-                                    name = it.name,
-                                    designation = it.designation,
-                                    phoneNumber = it.phoneNumber
-                                )
+                                // Map all fields including ID and Department
+                                ContactPerson(it.id, it.name, it.designation, it.phoneNumber, it.department)
                             }
                         )
                     }
             }
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5_000),
-                emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun save(entity: OfficialContactEntity) {
+    fun save(contact: OfficialContactEntity) {
+        viewModelScope.launch { dao.upsert(contact) }
+    }
+
+    fun delete(id: Long) {
+        viewModelScope.launch {
+            // Create a dummy entity with the ID to trigger deletion
+            dao.softDelete(id.toLong())
+        }
+    }
+
+    fun save2(entity: OfficialContactEntity) {
         viewModelScope.launch {
             dao.upsert(entity)
         }

@@ -28,6 +28,9 @@ interface OfficialContactDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(contacts: List<OfficialContactEntity>)
 
+    // ✅ Soft Delete: Sets isActive to 0 instead of removing the row
+    @Query("UPDATE official_contacts SET isActive = 0 WHERE id = :id")
+    suspend fun softDelete(id: Long)
 
     @Delete
     suspend fun delete(contact: OfficialContactEntity)
