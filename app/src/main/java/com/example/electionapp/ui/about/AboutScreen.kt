@@ -77,7 +77,7 @@ fun AboutScreen() {
                         role = "App Designer",
                         name = "Hashib Mahmud",
                         designation = "Upazila ICT Officer",
-                        location = "Sakhipur, Tangail- Bangladesh",
+                        location = "Sakhipur, Tangail, Bangladesh",
                         icon = Icons.Default.AutoAwesome,
                         gradient = Brush.linearGradient(listOf(Color(0xFFFF5F6D), Color(0xFFFFC371)))
                     )

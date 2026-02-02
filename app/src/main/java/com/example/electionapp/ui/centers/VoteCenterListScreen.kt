@@ -1,5 +1,6 @@
 package com.example.electionapp.ui.centers
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,13 +44,24 @@ fun VoteCenterListScreen(
         derivedStateOf { listState.firstVisibleItemIndex > 0 }
     }
 
+    // 1. Define the background gradient brush (same as AboutScreen)
+    val backgroundGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFFF8F9FA), Color(0xFFE9ECEF))
+    )
+
     Box(modifier = modifier.fillMaxSize()) {
 
         Scaffold(
+            // 2. Set containerColor to Transparent
+            containerColor = Color.Transparent,
             topBar = {
                 if (!isAdmin) {
 
                     TopAppBar(
+                        // 3. Make the TopAppBar transparent as well
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
+                        ),
 
                         title = { Text("Vote Centers") },
 
@@ -108,7 +121,12 @@ fun VoteCenterListScreen(
                 }
             }
         ) { paddingValues ->
-            // Use a Column to stack the SearchBar and the List vertically
+            // 4. Wrap the content in a Box with the gradient background
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(backgroundGradient) // Apply the brush here
+            ) {            // Use a Column to stack the SearchBar and the List vertically
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -162,5 +180,6 @@ fun VoteCenterListScreen(
                 }
             }
         }
+    }
     }
 }

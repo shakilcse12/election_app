@@ -216,7 +216,7 @@ fun VoteCenterCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))*/
                 Text(
-                    text = center.address,
+                    text = "\uD83D\uDCCD ${center.address}",
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = banglaFont),
                     color = Color.DarkGray
                 )
