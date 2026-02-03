@@ -93,8 +93,9 @@ dependencies {
     implementation(libs.google.play.services.maps)
     /* ---------------- OpenStreetMap (OSM) ---------------- */
     // Added osm-droid for free map alternatives
-    implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation(libs.osmdroid.android)
     implementation(libs.google.gson)
+    implementation(libs.osmbonuspack)
 
 
     /* ---------------- Testing ---------------- */
