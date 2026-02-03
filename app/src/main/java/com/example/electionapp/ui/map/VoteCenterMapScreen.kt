@@ -46,7 +46,8 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.*
+import org.osmdroid.views.overlay.MapEventsOverlay
+import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.infowindow.InfoWindow
 import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
@@ -389,8 +390,54 @@ fun VoteCenterMapScreen(
     }
 }
 
-// ---------- HELPERS ----------
+// --- ADD THIS SAVER FOR MapViewState ---
+val MapViewStateSaver = Saver<MapViewState, List<Any>>(
+    save = { listOf(it.centerLat, it.centerLon, it.zoomLevel, it.hasInitialZoom) },
+    restore = {
+        MapViewState(
+            centerLat = it[0] as Double,
+            centerLon = it[1] as Double,
+            zoomLevel = it[2] as Double,
+            hasInitialZoom = it[3] as Boolean
+        )
+    }
+)
 
+// CustomInfoWindow (Blue number fix)
+class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
+    MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
+    override fun onOpen(item: Any?) {
+        super.onOpen(item)
+        val marker = item as? Marker ?: return
+        mView.isClickable = true
+        mView.background = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            cornerRadius = 32f
+            setStroke(2, Color.LTGRAY)
+        }
+        val titleView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
+        val descView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
+        titleView?.apply {
+            setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
+            text = marker.title
+            setPadding(20, 10, 20, 0)
+        }
+        descView?.apply {
+            setTextColor(Color.GRAY)
+            text = "${marker.snippet}\n\n📍 Tap for Directions"
+            setPadding(20, 5, 20, 20)
+        }
+        mView.setOnClickListener { onDirectionsClick(); close() }
+    }
+}
+
+private fun openDirections(context: Context, lat: Double, lon: Double) {
+    val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
+    val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
+
+// --- ADDED: Function to generate custom marker with number ---
 private fun createCustomMarker(
     context: Context,
     number: String
@@ -454,50 +501,4 @@ private fun createCustomMarker(
     canvas.drawText(number, centerX, textY, paint)
 
     return BitmapDrawable(context.resources, bitmap)
-}
-
-
-val MapViewStateSaver = Saver<MapViewState, List<Any>>(
-    save = { listOf(it.centerLat, it.centerLon, it.zoomLevel, it.hasInitialZoom) },
-    restore = {
-        MapViewState(
-            centerLat = it[0] as Double,
-            centerLon = it[1] as Double,
-            zoomLevel = it[2] as Double,
-            hasInitialZoom = it[3] as Boolean
-        )
-    }
-)
-
-class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
-    MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
-    override fun onOpen(item: Any?) {
-        super.onOpen(item)
-        val marker = item as? Marker ?: return
-        mView.isClickable = true
-        mView.background = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            cornerRadius = 32f
-            setStroke(2, Color.LTGRAY)
-        }
-        val titleView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
-        val descView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
-        titleView?.apply {
-            setTextColor(Color.parseColor("#1976D2"))
-            text = marker.title
-            setPadding(20, 10, 20, 0)
-        }
-        descView?.apply {
-            setTextColor(Color.GRAY)
-            text = "${marker.snippet}\n\n📍 Tap for Directions"
-            setPadding(20, 5, 20, 20)
-        }
-        mView.setOnClickListener { onDirectionsClick(); close() }
-    }
-}
-
-private fun openDirections(context: Context, lat: Double, lon: Double) {
-    val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
-    val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    context.startActivity(intent)
 }

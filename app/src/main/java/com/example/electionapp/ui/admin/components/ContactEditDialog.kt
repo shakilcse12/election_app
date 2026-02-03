@@ -21,10 +21,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.example.electionapp.data.local.entity.OfficialContactEntity
 import com.example.electionapp.ui.admin.model.ContactPerson
+import androidx.core.content.ContextCompat
 
 @Composable
 fun ContactEditDialog(
@@ -40,42 +39,64 @@ fun ContactEditDialog(
 
     val isFormValid = name.isNotBlank() && designation.isNotBlank() && phoneNumber.length >= 5
 
-    // Logic: Contact Picker Launcher (Intact)
+    // Contact Picker Launcher
     val contactPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact()
     ) { uri ->
         uri?.let { contactUri ->
-            try {
-                val projection = arrayOf(ContactsContract.Contacts.DISPLAY_NAME, ContactsContract.Contacts._ID)
-                context.contentResolver.query(contactUri, projection, null, null, null)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        name = cursor.getString(0)
-                        val id = cursor.getString(1)
-                        context.contentResolver.query(
-                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
-                            arrayOf(id),
-                            null
-                        )?.use { phoneCursor ->
-                            if (phoneCursor.moveToFirst()) {
-                                phoneNumber = phoneCursor.getString(0).replace(Regex("[^0-9+]"), "")
+            // Check permission one last time before querying the database
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    val projection = arrayOf(
+                        ContactsContract.Contacts.DISPLAY_NAME,
+                        ContactsContract.Contacts._ID
+                    )
+                    context.contentResolver.query(contactUri, projection, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+                            val idIndex = cursor.getColumnIndex(ContactsContract.Contacts._ID)
+
+                            if (nameIndex != -1) name = cursor.getString(nameIndex)
+
+                            if (idIndex != -1) {
+                                val id = cursor.getString(idIndex)
+                                // Query for the phone number specifically for this ID
+                                context.contentResolver.query(
+                                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                                    arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+                                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                                    arrayOf(id),
+                                    null
+                                )?.use { phoneCursor ->
+                                    if (phoneCursor.moveToFirst()) {
+                                        val numIndex = phoneCursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                                        if (numIndex != -1) {
+                                            phoneNumber = phoneCursor.getString(numIndex).replace(Regex("[^0-9+]"), "")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Failed to import contact", Toast.LENGTH_SHORT).show()
                 }
-            } catch (e: SecurityException) {
-                Toast.makeText(context, "Permission required", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Permission lost. Please allow contact access.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Logic: Permission Launcher (Intact)
+    // Permission Launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) contactPickerLauncher.launch(null)
-        else Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
+        if (isGranted) {
+            contactPickerLauncher.launch(null)
+        } else {
+            Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
+        }
     }
 
     AlertDialog(
@@ -103,7 +124,6 @@ fun ContactEditDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Name Field
                 ModernTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -123,7 +143,6 @@ fun ContactEditDialog(
                     }
                 )
 
-                // Designation Field
                 ModernTextField(
                     value = designation,
                     onValueChange = { designation = it },
@@ -131,7 +150,6 @@ fun ContactEditDialog(
                     icon = Icons.Default.MilitaryTech
                 )
 
-                // Phone Field
                 ModernTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it },
@@ -139,7 +157,6 @@ fun ContactEditDialog(
                     icon = Icons.Default.Phone
                 )
 
-                // Department Selection (Enhanced UI)
                 Column {
                     Text(
                         "Organization / Department",
