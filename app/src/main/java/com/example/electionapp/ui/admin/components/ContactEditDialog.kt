@@ -6,15 +6,22 @@ import android.provider.ContactsContract
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContactPage
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.electionapp.data.local.entity.OfficialContactEntity
 import com.example.electionapp.ui.admin.model.ContactPerson
@@ -33,7 +40,7 @@ fun ContactEditDialog(
 
     val isFormValid = name.isNotBlank() && designation.isNotBlank() && phoneNumber.length >= 5
 
-    // ✅ 1. Picker Launcher (Triggered after permission is granted)
+    // Logic: Contact Picker Launcher (Intact)
     val contactPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickContact()
     ) { uri ->
@@ -44,7 +51,6 @@ fun ContactEditDialog(
                     if (cursor.moveToFirst()) {
                         name = cursor.getString(0)
                         val id = cursor.getString(1)
-
                         context.contentResolver.query(
                             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                             arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
@@ -59,35 +65,52 @@ fun ContactEditDialog(
                     }
                 }
             } catch (e: SecurityException) {
-                Toast.makeText(context, "Permission required to read phone number", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Permission required", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // ✅ 2. Permission Launcher
+    // Logic: Permission Launcher (Intact)
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (isGranted) {
-            contactPickerLauncher.launch(null)
-        } else {
-            Toast.makeText(context, "Contacts permission is required to import data", Toast.LENGTH_LONG).show()
-        }
+        if (isGranted) contactPickerLauncher.launch(null)
+        else Toast.makeText(context, "Permission denied", Toast.LENGTH_SHORT).show()
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (contact == null) "Add Official" else "Edit Official") },
+        shape = RoundedCornerShape(28.dp),
+        icon = {
+            Icon(
+                imageVector = if (contact == null) Icons.Default.PersonAdd else Icons.Default.EditNote,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = {
+            Text(
+                text = if (contact == null) "Add Official" else "Edit Official",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Name Field
+                ModernTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth(),
+                    label = "Full Name",
+                    icon = Icons.Default.Person,
                     trailingIcon = {
                         IconButton(onClick = {
-                            // ✅ 3. Permission Check Logic
                             val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
                             if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
                                 contactPickerLauncher.launch(null)
@@ -95,29 +118,42 @@ fun ContactEditDialog(
                                 permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
                             }
                         }) {
-                            Icon(Icons.Default.ContactPage, contentDescription = "Import")
+                            Icon(Icons.Default.ContactPage, contentDescription = "Import", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 )
-                OutlinedTextField(
+
+                // Designation Field
+                ModernTextField(
                     value = designation,
                     onValueChange = { designation = it },
-                    label = { Text("Designation / Rank") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
-                    label = { Text("Phone Number") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = "Designation / Rank",
+                    icon = Icons.Default.MilitaryTech
                 )
 
-                Text("Department", style = MaterialTheme.typography.labelMedium)
-                val departments = listOf("Bangladesh Army", "Bangladesh Police", "Border Guard (BGB)")
-                departments.forEach { dept ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = department == dept, onClick = { department = dept })
-                        Text(dept, modifier = Modifier.padding(start = 8.dp))
+                // Phone Field
+                ModernTextField(
+                    value = phoneNumber,
+                    onValueChange = { phoneNumber = it },
+                    label = "Phone Number",
+                    icon = Icons.Default.Phone
+                )
+
+                // Department Selection (Enhanced UI)
+                Column {
+                    Text(
+                        "Organization / Department",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+                    )
+                    val departments = listOf("Bangladesh Army", "Bangladesh Police", "Border Guard (BGB)")
+                    departments.forEach { dept ->
+                        DepartmentCard(
+                            label = dept,
+                            isSelected = department == dept,
+                            onClick = { department = dept }
+                        )
                     }
                 }
             }
@@ -134,9 +170,75 @@ fun ContactEditDialog(
                         isActive = true
                     ))
                 },
-                enabled = isFormValid
-            ) { Text("Save") }
+                enabled = isFormValid,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(0.4f)
+            ) {
+                Text("Save")
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = MaterialTheme.colorScheme.outline)
+            }
+        }
     )
+}
+
+@Composable
+fun ModernTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    trailingIcon: @Composable (() -> Unit)? = null
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp)) },
+        trailingIcon = trailingIcon,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedLabelColor = MaterialTheme.colorScheme.primary
+        )
+    )
+}
+
+@Composable
+fun DepartmentCard(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(
+            width = 1.dp,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(selected = isSelected, onClick = null)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        }
+    }
 }
