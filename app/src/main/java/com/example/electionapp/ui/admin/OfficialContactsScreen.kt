@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,17 +20,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.admin.components.ContactEditDialog
+import com.example.electionapp.ui.admin.components.DeleteConfirmationDialog
 import com.example.electionapp.ui.admin.model.ContactPerson
 import com.example.electionapp.ui.admin.model.Department
 import com.example.electionapp.ui.components.SearchBar
-import com.example.electionapp.ui.admin.components.DeleteConfirmationDialog
 
-// --- MAIN SCREEN ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfficialContactsScreen(
@@ -37,6 +38,7 @@ fun OfficialContactsScreen(
     viewModel: AdminContactsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current // ✅ 1. Get Focus Manager
     val departments by viewModel.departments.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
@@ -44,6 +46,7 @@ fun OfficialContactsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<ContactPerson?>(null) }
 
+    // Filtering logic
     val filtered = remember(searchQuery, departments) {
         if (searchQuery.isBlank()) departments
         else departments.map { d ->
@@ -53,6 +56,9 @@ fun OfficialContactsScreen(
         }.filter { it.contacts.isNotEmpty() }
     }
 
+    val totalContacts = remember(filtered) { filtered.sumOf { it.contacts.size } }
+
+    // Dialog state handling
     if (showEditDialog) {
         ContactEditDialog(
             contact = selectedContact,
@@ -69,62 +75,129 @@ fun OfficialContactsScreen(
         )
     }
 
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF8F9FA), Color(0xFFE9ECEF))
+    val screenBackground = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
     )
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         containerColor = Color.Transparent,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Official Contacts", fontWeight = FontWeight.Light) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
+                title = { Text("Official Contacts", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         },
         floatingActionButton = {
             if (isAdmin) {
                 FloatingActionButton(
                     onClick = { selectedContact = null; showEditDialog = true },
-                    modifier = Modifier.padding(bottom = 72.dp), // Offset for bottom bar
+                    modifier = Modifier.padding(bottom = 72.dp),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
-                ) { Icon(Icons.Default.Add, "Add") }
+                ) { Icon(Icons.Default.Add, contentDescription = "Add Official") }
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().background(backgroundGradient).padding(padding)) {
-            Column {
-                Box(modifier = Modifier.padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 12.dp,
-                    bottom = 8.dp // Reduced from 16.dp to 8.dp
+        // ✅ 2. Add clickable modifier to clear focus when background is tapped
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(screenBackground)
+                .padding(padding)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null // No ripple effect
+                ) { focusManager.clearFocus() }
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+
+                // 1. Fixed Search Bar
+                Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 2.dp)) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        placeholder = "Search by name or rank"
                     )
-                ) {
-                    SearchBar(query = searchQuery, onQueryChange = { searchQuery = it }, placeholder = "Search by name or rank")
                 }
-                LazyColumn(contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 12.dp,    // Set to 0.dp to bring the list right up to the search bar
-                        bottom = 100.dp // Extra space at bottom to ensure FAB doesn't cover last item
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(filtered) { dept ->
-                        DepartmentCard(dept, isAdmin,
-                            onCall = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$it"))) },
-                            onEdit = { selectedContact = it; showEditDialog = true },
-                            onDelete = { selectedContact = it; showDeleteDialog = true }
-                        )
+
+                // 2. Animated Count Text
+                AnimatedVisibility(
+                    visible = totalContacts > 0,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Text(
+                        text = "Showing $totalContacts officials",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp)
+                    )
+                }
+
+                // 3. Main Content Area
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 100.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(filtered, key = { it.title }) { dept ->
+                            DepartmentCard(
+                                dept = dept,
+                                isAdmin = isAdmin,
+                                onCall = { phone ->
+                                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+                                },
+                                onEdit = { person ->
+                                    selectedContact = person
+                                    showEditDialog = true
+                                },
+                                onDelete = { person ->
+                                    selectedContact = person
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
+                    }
+
+                    // 4. "No Results Found" State
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = totalContacts == 0,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut(),
+                        modifier = Modifier.align(Alignment.Center)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SearchOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                text = "No officials found for \"$searchQuery\"",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(onClick = { searchQuery = "" }) {
+                                Text("Clear Search")
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
-
 @Composable
 fun DepartmentCard(dept: Department, isAdmin: Boolean, onCall: (String) -> Unit, onEdit: (ContactPerson) -> Unit, onDelete: (ContactPerson) -> Unit) {
     var expanded by remember { mutableStateOf(true) }
