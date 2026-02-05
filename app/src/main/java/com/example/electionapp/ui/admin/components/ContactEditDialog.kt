@@ -35,7 +35,7 @@ fun ContactEditDialog(
     var name by remember { mutableStateOf(contact?.name ?: "") }
     var designation by remember { mutableStateOf(contact?.designation ?: "") }
     var phoneNumber by remember { mutableStateOf(contact?.phoneNumber ?: "") }
-    var department by remember { mutableStateOf(contact?.department ?: "Bangladesh Army") }
+    var department by remember { mutableStateOf(contact?.department ?: "Bangladesh Administration") }
 
     val isFormValid = name.isNotBlank() && designation.isNotBlank() && phoneNumber.length >= 5
 
@@ -164,7 +164,7 @@ fun ContactEditDialog(
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
                     )
-                    val departments = listOf("Bangladesh Army", "Bangladesh Police", "Border Guard (BGB)")
+                    val departments = listOf("Bangladesh Administration", "Bangladesh Army", "Bangladesh Police", "Border Guard (BGB)")
                     departments.forEach { dept ->
                         DepartmentCard(
                             label = dept,

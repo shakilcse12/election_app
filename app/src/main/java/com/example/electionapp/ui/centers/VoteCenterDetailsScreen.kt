@@ -121,7 +121,14 @@ fun VoteCenterDetailsScreen(
             }
         }
     ) { paddingValues ->
-        center?.let {
+        center?.let { it ->
+            val presidingOfficerDisplayName = remember(it.presidingOfficerName) {
+                it.presidingOfficerName
+                    .split(",")
+                    .map { part -> part.trim() }
+                    .take(2)
+                    .joinToString(", ")
+            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -194,7 +201,7 @@ fun VoteCenterDetailsScreen(
                             InfoRow(
                                 icon = Icons.Default.Menu,
                                 label = "Name",
-                                value = it.presidingOfficerName,
+                                value = presidingOfficerDisplayName,
                                 iconColor = MaterialTheme.colorScheme.primary
                             )
                             Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)

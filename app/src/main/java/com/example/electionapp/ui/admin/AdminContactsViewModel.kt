@@ -1,9 +1,11 @@
 package com.example.electionapp.ui.admin
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.LocalPolice
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
@@ -79,13 +81,15 @@ class AdminContactsViewModel @Inject constructor(
 /* ---------- UI PRESERVATION HELPERS ---------- */
 
 fun departmentIcon(dept: String): ImageVector = when (dept) {
+    "Bangladesh Administration" -> Icons.Default.AccountBalance
     "Bangladesh Army" -> Icons.Default.Security
     "Bangladesh Police" -> Icons.Default.LocalPolice
-    "Border Guard (BGB)" -> Icons.Default.Business
+    "Border Guard (BGB)" -> Icons.Default.Shield
     else -> Icons.Default.Business
 }
 
 fun departmentColor(dept: String): Color = when (dept) {
+    "Bangladesh Administration" -> Color(0xFF3F51B5) // Royal Indigo for Executive Authority
     "Bangladesh Army" -> Color(0xFF2E7D32)
     "Bangladesh Police" -> Color(0xFF1565C0)
     "Border Guard (BGB)" -> Color(0xFFC62828)
@@ -120,6 +124,13 @@ private fun initialContacts(): List<OfficialContactEntity> = listOf(
         name = "ASP Nusrat Jahan",
         designation = "HQ Coordinator",
         phoneNumber = "01811333333"
+    ),
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "Senior Assistant Commissioner Jamal Haque",
+        designation = "HQ Coordinator",
+        phoneNumber = "01811333355"
     ),
     OfficialContactEntity(
         id = 0,

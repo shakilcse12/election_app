@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,14 @@ fun VoteCenterCard(
 
     // Bengali-capable font (system default is fine, or replace with Noto Sans Bengali)
     val banglaFont = FontFamily.Default
+
+    val presidingOfficerDisplayName = remember(center.presidingOfficerName) {
+        center.presidingOfficerName
+            .split(",")
+            .map { it.trim() }
+            .take(2)
+            .joinToString(", ")
+    }
 
     ElevatedCard(
         modifier = Modifier
@@ -172,7 +181,7 @@ fun VoteCenterCard(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = center.presidingOfficerName,
+                        text = presidingOfficerDisplayName,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontFamily = banglaFont
