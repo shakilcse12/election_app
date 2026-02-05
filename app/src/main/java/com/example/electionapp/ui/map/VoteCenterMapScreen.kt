@@ -38,8 +38,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.electionapp.ui.centers.VoteCenterViewModel
+import com.example.electionapp.ui.map.components.CustomRadiusMarkerCluster
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -62,6 +64,18 @@ data class MapViewState(
     val hasInitialZoom: Boolean = false
 )
 
+val MapViewStateSaver = Saver<MapViewState, List<Any>>(
+    save = { listOf(it.centerLat, it.centerLon, it.zoomLevel, it.hasInitialZoom) },
+    restore = {
+        MapViewState(
+            centerLat = it[0] as Double,
+            centerLon = it[1] as Double,
+            zoomLevel = it[2] as Double,
+            hasInitialZoom = it[3] as Boolean
+        )
+    }
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoteCenterMapScreen(
@@ -70,7 +84,9 @@ fun VoteCenterMapScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope() // Added for coordination
 
+    // Cache to prevent recreating markers unnecessarily
     val markerCache = remember { mutableMapOf<Int, Marker>() }
 
     var mapViewState by rememberSaveable(stateSaver = MapViewStateSaver) {
@@ -103,6 +119,13 @@ fun VoteCenterMapScreen(
             setMultiTouchControls(true)
             isHorizontalMapRepetitionEnabled = false
             isVerticalMapRepetitionEnabled = false
+        }
+    }
+
+    // Dynamic Clusterer with density-based colors
+    val clusterer = remember {
+        CustomRadiusMarkerCluster(context, mapView).apply {
+            setRadius(100)
         }
     }
 
@@ -171,11 +194,8 @@ fun VoteCenterMapScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
             permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION))
         } else {
             locationOverlay.enableMyLocation()
@@ -194,11 +214,13 @@ fun VoteCenterMapScreen(
         }.take(5)
     }
 
-    // ---------- MARKERS ----------
+    // ---------- MARKERS & OVERLAYS ----------
     LaunchedEffect(voteCenters) {
+        clusterer.items.clear()
+
         voteCenters.forEach { center ->
-            if (center.entity.id !in markerCache) {
-                val marker = Marker(mapView).apply {
+            val marker = markerCache.getOrPut(center.entity.id) {
+                Marker(mapView).apply {
                     position = GeoPoint(center.entity.latitude, center.entity.longitude)
                     title = "${center.entity.centerNumber}. ${center.entity.centerName}"
                     snippet = center.entity.address
@@ -218,14 +240,13 @@ fun VoteCenterMapScreen(
                         true
                     }
                 }
-                mapView.overlays.add(marker)
-                markerCache[center.entity.id] = marker
             }
+            clusterer.add(marker)
         }
 
-        if (!mapView.overlays.contains(locationOverlay)) {
-            mapView.overlays.add(locationOverlay)
-        }
+        if (!mapView.overlays.contains(clusterer)) mapView.overlays.add(clusterer)
+        if (!mapView.overlays.contains(locationOverlay)) mapView.overlays.add(locationOverlay)
+        if (!mapView.overlays.contains(mapEventsOverlay)) mapView.overlays.add(0, mapEventsOverlay)
 
         if (!hasPerformedInitialZoom && mapViewState.zoomLevel == 0.0 && voteCenters.isNotEmpty()) {
             val bbox = BoundingBox.fromGeoPoints(
@@ -234,44 +255,29 @@ fun VoteCenterMapScreen(
             mapView.zoomToBoundingBox(bbox.increaseByScale(1.3f), true)
             hasPerformedInitialZoom = true
         }
+        mapView.invalidate()
     }
 
-    // ---------- SAFE STATE SYNC ----------
+    // State Sync
     LaunchedEffect(Unit) {
         while (isActive) {
-            delay(500)
+            delay(1000)
             if (mapView.zoomLevelDouble > 0) {
                 val center = mapView.mapCenter
-                mapViewState = MapViewState(
-                    centerLat = center.latitude,
-                    centerLon = center.longitude,
-                    zoomLevel = mapView.zoomLevelDouble,
-                    hasInitialZoom = hasPerformedInitialZoom
-                )
+                mapViewState = MapViewState(center.latitude, center.longitude, mapView.zoomLevelDouble, hasPerformedInitialZoom)
             }
         }
     }
 
     // ---------- UI ----------
     Box(Modifier.fillMaxSize()) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = {
-                if (!mapView.overlays.contains(mapEventsOverlay)) {
-                    mapView.overlays.add(0, mapEventsOverlay)
-                }
-                mapView
-            }
-        )
-        // UI content unchanged (FABs, SearchBar, BottomCard)
+        AndroidView(modifier = Modifier.fillMaxSize(), factory = { mapView })
+
         Column(modifier = Modifier.align(Alignment.TopCenter).padding(top = 40.dp, start = 16.dp, end = 16.dp)) {
             DockedSearchBar(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it; searchActive = it.isNotBlank() },
-                onSearch = {
-                    searchActive = false
-                    focusManager.clearFocus()
-                },
+                onSearch = { searchActive = false; focusManager.clearFocus() },
                 active = searchActive,
                 onActiveChange = { searchActive = it },
                 placeholder = { Text("Search centers") },
@@ -295,10 +301,21 @@ fun VoteCenterMapScreen(
                                 searchQuery = ""
                                 searchActive = false
                                 focusManager.clearFocus()
+
+                                // FIX: Clear previous windows and start the map animation
                                 InfoWindow.closeAllInfoWindowsOn(mapView)
-                                markerCache[item.entity.id]?.let {
-                                    it.showInfoWindow()
-                                    mapView.controller.animateTo(point, 18.0, 800L)
+                                mapView.controller.animateTo(point, 18.0, 800L)
+
+                                // FIX: Use coroutine to coordinate the window opening
+                                coroutineScope.launch {
+                                    // A 300ms delay ensures the zoom is deep enough that
+                                    // the clusterer has "un-grouped" the specific marker.
+                                    delay(300)
+                                    markerCache[item.entity.id]?.let { marker ->
+                                        // Update the projection state
+                                        mapView.invalidate()
+                                        marker.showInfoWindow()
+                                    }
                                 }
                             }
                         )
@@ -307,10 +324,9 @@ fun VoteCenterMapScreen(
             }
         }
 
+        // FABs
         Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = fabOffset),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = fabOffset),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AnimatedVisibility(visible = hasPerformedInitialZoom) {
@@ -350,6 +366,7 @@ fun VoteCenterMapScreen(
             }
         }
 
+        // Bottom Card
         AnimatedVisibility(
             visible = selectedAddress != null,
             modifier = Modifier.align(Alignment.BottomCenter)
@@ -390,20 +407,7 @@ fun VoteCenterMapScreen(
     }
 }
 
-// --- ADD THIS SAVER FOR MapViewState ---
-val MapViewStateSaver = Saver<MapViewState, List<Any>>(
-    save = { listOf(it.centerLat, it.centerLon, it.zoomLevel, it.hasInitialZoom) },
-    restore = {
-        MapViewState(
-            centerLat = it[0] as Double,
-            centerLon = it[1] as Double,
-            zoomLevel = it[2] as Double,
-            hasInitialZoom = it[3] as Boolean
-        )
-    }
-)
-
-// CustomInfoWindow (Blue number fix)
+// ---------- CUSTOM INFO WINDOW ----------
 class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
     MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
     override fun onOpen(item: Any?) {
@@ -415,14 +419,12 @@ class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Un
             cornerRadius = 32f
             setStroke(2, Color.LTGRAY)
         }
-        val titleView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
-        val descView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
-        titleView?.apply {
-            setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
+        mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)?.apply {
+            setTextColor(Color.parseColor("#1976D2"))
             text = marker.title
             setPadding(20, 10, 20, 0)
         }
-        descView?.apply {
+        mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)?.apply {
             setTextColor(Color.GRAY)
             text = "${marker.snippet}\n\n📍 Tap for Directions"
             setPadding(20, 5, 20, 20)
@@ -431,74 +433,56 @@ class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Un
     }
 }
 
+// ---------- UTILS ----------
 private fun openDirections(context: Context, lat: Double, lon: Double) {
-    val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
-    val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    context.startActivity(intent)
+    val gmmIntentUri = Uri.parse("google.navigation:q=$lat,$lon")
+    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+    mapIntent.setPackage("com.google.android.apps.maps")
+    mapIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    if (mapIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(mapIntent)
+    } else {
+        val webUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
+        context.startActivity(Intent(Intent.ACTION_VIEW, webUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
 }
 
-// --- ADDED: Function to generate custom marker with number ---
-private fun createCustomMarker(
-    context: Context,
-    number: String
-): Drawable {
-
+private fun createCustomMarker(context: Context, number: String): Drawable {
     val size = 110
     val bitmap = Bitmap.createBitmap(size, size + 20, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
     val centerX = size / 2f
     val centerY = size / 2f
     val radius = size / 2.2f
 
-    // ---------- COLORS ----------
-    val blueDark = Color.parseColor("#1565C0")
-    val blueLight = Color.parseColor("#1E88E5")
-
-    // ---------- PIN PATH (TEARDROP) ----------
     val pinPath = Path().apply {
         addCircle(centerX, centerY, radius, Path.Direction.CW)
-
         moveTo(centerX - 16f, centerY + radius - 6f)
         lineTo(centerX, size.toFloat() + 12f)
         lineTo(centerX + 16f, centerY + radius - 6f)
         close()
     }
 
-    // ---------- 1. GRADIENT FILL ----------
-    paint.style = Paint.Style.FILL
-    paint.shader = LinearGradient(
-        centerX,
-        centerY - radius,
-        centerX,
-        centerY + radius,
-        blueLight,
-        blueDark,
-        Shader.TileMode.CLAMP
-    )
+    paint.shader = LinearGradient(centerX, centerY - radius, centerX, centerY + radius,
+        Color.parseColor("#1E88E5"), Color.parseColor("#1565C0"), Shader.TileMode.CLAMP)
     canvas.drawPath(pinPath, paint)
 
-    // ---------- 2. WHITE BORDER ----------
     paint.shader = null
     paint.style = Paint.Style.STROKE
     paint.color = Color.WHITE
     paint.strokeWidth = 5f
     canvas.drawPath(pinPath, paint)
 
-    // ---------- 3. NUMBER TEXT (WHITE) ----------
     paint.style = Paint.Style.FILL
     paint.color = Color.WHITE
     paint.textSize = 36f
     paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     paint.textAlign = Paint.Align.CENTER
-
     val textBounds = Rect()
     paint.getTextBounds(number, 0, number.length, textBounds)
-    val textY = centerY + (textBounds.height() / 2f)
-
-    canvas.drawText(number, centerX, textY, paint)
+    canvas.drawText(number, centerX, centerY + (textBounds.height() / 2f), paint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
