@@ -9,6 +9,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,9 +85,8 @@ fun VoteCenterMapScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val coroutineScope = rememberCoroutineScope() // Added for coordination
+    val coroutineScope = rememberCoroutineScope()
 
-    // Cache to prevent recreating markers unnecessarily
     val markerCache = remember { mutableMapOf<Int, Marker>() }
 
     var mapViewState by rememberSaveable(stateSaver = MapViewStateSaver) {
@@ -122,7 +122,6 @@ fun VoteCenterMapScreen(
         }
     }
 
-    // Dynamic Clusterer with density-based colors
     val clusterer = remember {
         CustomRadiusMarkerCluster(context, mapView).apply {
             setRadius(100)
@@ -302,17 +301,14 @@ fun VoteCenterMapScreen(
                                 searchActive = false
                                 focusManager.clearFocus()
 
-                                // FIX: Clear previous windows and start the map animation
                                 InfoWindow.closeAllInfoWindowsOn(mapView)
+                                // Standard zoom to break cluster
                                 mapView.controller.animateTo(point, 18.0, 800L)
 
-                                // FIX: Use coroutine to coordinate the window opening
                                 coroutineScope.launch {
-                                    // A 300ms delay ensures the zoom is deep enough that
-                                    // the clusterer has "un-grouped" the specific marker.
-                                    delay(300)
+                                    // 500ms delay: ensures animation is far enough and cluster is broken
+                                    delay(500)
                                     markerCache[item.entity.id]?.let { marker ->
-                                        // Update the projection state
                                         mapView.invalidate()
                                         marker.showInfoWindow()
                                     }
@@ -408,28 +404,43 @@ fun VoteCenterMapScreen(
 }
 
 // ---------- CUSTOM INFO WINDOW ----------
-class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
+class CustomInfoWindow(private val mapView: MapView, private val onDirectionsClick: () -> Unit) :
     MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
+
     override fun onOpen(item: Any?) {
-        super.onOpen(item)
         val marker = item as? Marker ?: return
-        mView.isClickable = true
-        mView.background = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            cornerRadius = 32f
-            setStroke(2, Color.LTGRAY)
+
+        // Manually inflate if mView is null to prevent NullPointerException
+        if (mView == null) {
+            val inflater = mapView.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+            mView = inflater.inflate(org.osmdroid.library.R.layout.bonuspack_bubble, mapView, false)
         }
-        mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)?.apply {
-            setTextColor(Color.parseColor("#1976D2"))
-            text = marker.title
-            setPadding(20, 10, 20, 0)
+
+        mView?.let { bubbleView ->
+            bubbleView.isClickable = true
+            bubbleView.background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = 32f
+                setStroke(2, Color.LTGRAY)
+            }
+
+            bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)?.apply {
+                setTextColor(Color.parseColor("#1976D2"))
+                text = marker.title
+                setPadding(20, 10, 20, 0)
+            }
+
+            bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)?.apply {
+                setTextColor(Color.GRAY)
+                text = "${marker.snippet}\n\n📍 Tap for Directions"
+                setPadding(20, 5, 20, 20)
+            }
+
+            bubbleView.setOnClickListener {
+                onDirectionsClick()
+                close()
+            }
         }
-        mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)?.apply {
-            setTextColor(Color.GRAY)
-            text = "${marker.snippet}\n\n📍 Tap for Directions"
-            setPadding(20, 5, 20, 20)
-        }
-        mView.setOnClickListener { onDirectionsClick(); close() }
     }
 }
 
