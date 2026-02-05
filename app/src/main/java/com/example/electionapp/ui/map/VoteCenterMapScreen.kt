@@ -40,6 +40,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.electionapp.ui.centers.VoteCenterViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -70,6 +71,7 @@ fun VoteCenterMapScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope() // Required for safe search selection
 
     val markerCache = remember { mutableMapOf<Int, Marker>() }
 
@@ -296,9 +298,15 @@ fun VoteCenterMapScreen(
                                 searchActive = false
                                 focusManager.clearFocus()
                                 InfoWindow.closeAllInfoWindowsOn(mapView)
-                                markerCache[item.entity.id]?.let {
-                                    it.showInfoWindow()
-                                    mapView.controller.animateTo(point, 18.0, 800L)
+                                // Start animation first
+                                mapView.controller.animateTo(point, 18.0, 800L)
+                                // FIX: Use coroutine to wait for the map to stabilize
+                                coroutineScope.launch {
+                                    delay(500) // Wait for animation and clustering to settle
+                                    markerCache[item.entity.id]?.let {
+                                        mapView.invalidate()
+                                        it.showInfoWindow()
+                                    }
                                 }
                             }
                         )
@@ -404,30 +412,55 @@ val MapViewStateSaver = Saver<MapViewState, List<Any>>(
 )
 
 // CustomInfoWindow (Blue number fix)
-class CustomInfoWindow(mapView: MapView, private val onDirectionsClick: () -> Unit) :
+class CustomInfoWindow(private val mapView: MapView, private val onDirectionsClick: () -> Unit) :
     MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
+
     override fun onOpen(item: Any?) {
+        // 1. Manually inflate mView if it's null BEFORE calling super.onOpen
+        if (mView == null) {
+            val inflater = mapView.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as android.view.LayoutInflater
+            mView = inflater.inflate(org.osmdroid.library.R.layout.bonuspack_bubble, mapView, false)
+        }
+
+        // 2. Now it is safe to call super
         super.onOpen(item)
+
         val marker = item as? Marker ?: return
-        mView.isClickable = true
-        mView.background = GradientDrawable().apply {
-            setColor(Color.WHITE)
-            cornerRadius = 32f
-            setStroke(2, Color.LTGRAY)
+
+        // 3. Use a safe let block to configure the view
+        mView?.let { bubbleView ->
+            bubbleView.isClickable = true
+            bubbleView.background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = 32f
+                setStroke(2, Color.LTGRAY)
+            }
+
+            val titleView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
+            val descView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
+
+            titleView?.apply {
+                setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
+                text = marker.title
+                setPadding(20, 10, 20, 0)
+            }
+
+            descView?.apply {
+                setTextColor(Color.GRAY)
+                text = "${marker.snippet}\n\n📍 Tap for Directions"
+                setPadding(20, 5, 20, 20)
+            }
+
+            bubbleView.setOnClickListener {
+                onDirectionsClick()
+                close()
+            }
         }
-        val titleView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
-        val descView = mView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
-        titleView?.apply {
-            setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
-            text = marker.title
-            setPadding(20, 10, 20, 0)
-        }
-        descView?.apply {
-            setTextColor(Color.GRAY)
-            text = "${marker.snippet}\n\n📍 Tap for Directions"
-            setPadding(20, 5, 20, 20)
-        }
-        mView.setOnClickListener { onDirectionsClick(); close() }
+    }
+
+    override fun onClose() {
+        super.onClose()
+        // Optional: Clean up if necessary
     }
 }
 
@@ -438,15 +471,20 @@ private fun openDirections(context: Context, lat: Double, lon: Double) {
 }
 
 // --- ADDED: Function to generate custom marker with number ---
+// 1. Add this cache outside the function (at the top level of the file or in the ViewModel)
+private val markerIconCache = mutableMapOf<String, Drawable>()
+
 private fun createCustomMarker(
     context: Context,
     number: String
 ): Drawable {
+    // 2. Check the cache first. Zero breaking changes, massive performance boost.
+    markerIconCache[number]?.let { return it }
 
     val size = 110
+    // size + 20 to accommodate the pin tail
     val bitmap = Bitmap.createBitmap(size, size + 20, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     val centerX = size / 2f
@@ -460,7 +498,7 @@ private fun createCustomMarker(
     // ---------- PIN PATH (TEARDROP) ----------
     val pinPath = Path().apply {
         addCircle(centerX, centerY, radius, Path.Direction.CW)
-
+        // Draw the tail of the pin
         moveTo(centerX - 16f, centerY + radius - 6f)
         lineTo(centerX, size.toFloat() + 12f)
         lineTo(centerX + 16f, centerY + radius - 6f)
@@ -500,5 +538,9 @@ private fun createCustomMarker(
 
     canvas.drawText(number, centerX, textY, paint)
 
-    return BitmapDrawable(context.resources, bitmap)
+    val drawable = BitmapDrawable(context.resources, bitmap)
+
+    // 3. Store in cache before returning
+    markerIconCache[number] = drawable
+    return drawable
 }
