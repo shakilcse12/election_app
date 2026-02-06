@@ -87,6 +87,7 @@ class VoteCenterViewModel @Inject constructor(
 
     fun clearFilters() {
         _selectedUnions.value = emptySet()
+        _searchQuery.value = ""
     }
 
     // --- Data Loading (Used by Details Screen) ---
