@@ -145,7 +145,7 @@ fun VoteCenterListScreen(
                     state = listState, // 4. Attach the scroll state here
                     modifier = Modifier
                         .fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
 
                 ) {

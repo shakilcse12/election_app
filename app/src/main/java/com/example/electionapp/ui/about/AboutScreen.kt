@@ -11,10 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,7 +30,12 @@ fun AboutScreen() {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("App Credits", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = "App Credits",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.Transparent
                 )
@@ -37,7 +43,12 @@ fun AboutScreen() {
         },
         containerColor = Color.Transparent
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().background(backgroundGradient).padding(padding)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(backgroundGradient)
+                .padding(padding)
+        ) {
             LazyColumn(
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -49,7 +60,9 @@ fun AboutScreen() {
                         designation = "Deputy Commissioner",
                         location = "Tangail, Bangladesh",
                         icon = Icons.Default.EmojiEvents,
-                        gradient = Brush.linearGradient(listOf(Color(0xFFEB3349), Color(0xFFF45C43)))
+                        gradient = Brush.linearGradient(
+                            listOf(Color(0xFFEB3349), Color(0xFFF45C43))
+                        )
                     )
                 }
                 item {
@@ -59,7 +72,9 @@ fun AboutScreen() {
                         designation = "Upazila Nirbahi Officer",
                         location = "Sakhipur, Tangail, Bangladesh",
                         icon = Icons.Default.Info,
-                        gradient = Brush.linearGradient(listOf(Color(0xFF6A11CB), Color(0xFF2575FC)))
+                        gradient = Brush.linearGradient(
+                            listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+                        )
                     )
                 }
                 item {
@@ -69,7 +84,9 @@ fun AboutScreen() {
                         designation = "Upazila ICT Officer",
                         location = "Chauddagram, Cumilla, Bangladesh",
                         icon = Icons.Default.Build,
-                        gradient = Brush.linearGradient(listOf(Color(0xFF00B09B), Color(0xFF96C93D)))
+                        gradient = Brush.linearGradient(
+                            listOf(Color(0xFF00B09B), Color(0xFF96C93D))
+                        )
                     )
                 }
                 item {
@@ -79,7 +96,9 @@ fun AboutScreen() {
                         designation = "Upazila ICT Officer",
                         location = "Sakhipur, Tangail, Bangladesh",
                         icon = Icons.Default.AutoAwesome,
-                        gradient = Brush.linearGradient(listOf(Color(0xFFFF5F6D), Color(0xFFFFC371)))
+                        gradient = Brush.linearGradient(
+                            listOf(Color(0xFFFF5F6D), Color(0xFFFFC371))
+                        )
                     )
                 }
             }
@@ -96,6 +115,20 @@ fun AboutMemberCard(
     icon: ImageVector,
     gradient: Brush
 ) {
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+
+    // 🔹 Responsive scaling (very subtle)
+    val screenWidthDp = configuration.screenWidthDp
+    val scaleFactor = when {
+        screenWidthDp < 360 -> 0.90f   // very small phones
+        screenWidthDp < 420 -> 0.95f   // low-mid phones
+        else -> 1f
+    }
+
+    val nameTextSize = (18.sp.value * scaleFactor).sp
+    val roleTextSize = (11.sp.value * scaleFactor).sp
+
     ElevatedCard(
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp),
@@ -106,10 +139,10 @@ fun AboutMemberCard(
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon Badge with Gradient
+            // Icon Badge
             Box(
                 modifier = Modifier
-                    .size(60.dp)
+                    .size((56.dp.value * scaleFactor).dp)
                     .background(gradient, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -117,29 +150,28 @@ fun AboutMemberCard(
                     imageVector = icon,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(30.dp)
+                    modifier = Modifier.size((26.dp.value * scaleFactor).dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(20.dp))
+            Spacer(modifier = Modifier.width(18.dp))
 
             Column {
                 Text(
                     text = role.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        letterSpacing = 1.2.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray
-                    )
+                    fontSize = roleTextSize,
+                    letterSpacing = 0.8.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray
                 )
+
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 20.sp
-                    ),
+                    fontSize = nameTextSize,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF2D3436)
                 )
+
                 Text(
                     text = designation,
                     style = MaterialTheme.typography.bodyMedium,

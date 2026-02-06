@@ -31,13 +31,13 @@ import com.example.electionapp.data.local.entity.VoteCenterEntity
 @Composable
 fun VoteCenterCard(
     center: VoteCenterEntity,
-    isAdmin: Boolean = false, // Show edit button only for admin
+    isAdmin: Boolean = false,
     onClick: () -> Unit,
     onEditClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
 
-    // Gradients for badges
+    /* ---------- Gradients ---------- */
     val blueBadgeGradient = Brush.linearGradient(
         colors = listOf(Color(0xFF4FC3F7), Color(0xFF0288D1))
     )
@@ -45,7 +45,6 @@ fun VoteCenterCard(
         colors = listOf(Color(0xFF81C784), Color(0xFF388E3C))
     )
 
-    // Bengali-capable font (system default is fine, or replace with Noto Sans Bengali)
     val banglaFont = FontFamily.Default
 
     val presidingOfficerDisplayName = remember(center.presidingOfficerName) {
@@ -61,7 +60,7 @@ fun VoteCenterCard(
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
     ) {
@@ -70,51 +69,53 @@ fun VoteCenterCard(
             /* ---------------- TOP ROW ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Vote Center Number Badge
+
+                    /* --- Center Number Badge --- */
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
-                            .background(brush = blueBadgeGradient, shape = RoundedCornerShape(8.dp)),
+                            .size(44.dp)
+                            .background(blueBadgeGradient, RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = center.centerNumber.toString(),
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White,
-                                fontFamily = banglaFont
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = banglaFont,
+                                color = Color.White
                             )
                         )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Vote Center Name (Bengali supported)
+                    /* --- Center Name --- */
                     Text(
                         text = center.centerName,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 17.sp,
-                            fontFamily = banglaFont
-                        ),
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            fontFamily = banglaFont,
+                            color = Color(0xFF1F2937)
+                        )
                     )
                 }
 
+                /* --- Action Icons --- */
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Map Icon
+
                     IconButton(
                         modifier = Modifier
                             .background(Color(0xFFFFEBEE), CircleShape)
-                            .size(40.dp),
+                            .size(38.dp),
                         onClick = {
                             val mapUri = Uri.parse(
                                 "geo:${center.latitude},${center.longitude}?q=${center.latitude},${center.longitude}(${center.centerName})"
@@ -126,24 +127,23 @@ fun VoteCenterCard(
                             Icons.Default.LocationOn,
                             contentDescription = "Open Map",
                             tint = Color(0xFFD32F2F),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
-                    // Edit Icon (Admin only)
                     if (isAdmin) {
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(
                             modifier = Modifier
                                 .background(Color(0xFFF3E5F5), CircleShape)
-                                .size(40.dp),
+                                .size(38.dp),
                             onClick = { onEditClick?.invoke() }
                         ) {
                             Icon(
                                 Icons.Default.Edit,
                                 contentDescription = "Edit",
                                 tint = Color(0xFF7B1FA2),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -153,50 +153,55 @@ fun VoteCenterCard(
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 thickness = 1.dp,
-                color = Color(0xFFEEEEEE)
+                color = Color(0xFFE5E7EB)
             )
 
-            /* ---------------- PRESIDING OFFICER ROW ---------------- */
+            /* ---------------- PRESIDING OFFICER ---------------- */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(34.dp)
                             .clip(CircleShape)
-                            .background(brush = greenAvatarGradient),
+                            .background(greenAvatarGradient),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Officer",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
+
                     Spacer(modifier = Modifier.width(12.dp))
+
                     Text(
                         text = presidingOfficerDisplayName,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = banglaFont
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = banglaFont,
+                            color = Color(0xFF374151)
                         )
                     )
                 }
 
-                // Call Button
                 IconButton(
                     modifier = Modifier
                         .background(Color(0xFFE3F2FD), CircleShape)
-                        .size(40.dp),
+                        .size(38.dp),
                     onClick = {
                         context.startActivity(
-                            Intent(Intent.ACTION_DIAL, Uri.parse("tel:${center.presidingOfficerPhone}"))
+                            Intent(
+                                Intent.ACTION_DIAL,
+                                Uri.parse("tel:${center.presidingOfficerPhone}")
+                            )
                         )
                     }
                 ) {
@@ -204,30 +209,28 @@ fun VoteCenterCard(
                         Icons.Default.Call,
                         contentDescription = "Call Presiding Officer",
                         tint = Color(0xFF1976D2),
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            /* ---------------- ADDRESS AREA ---------------- */
+            /* ---------------- ADDRESS ---------------- */
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF9F9F9), RoundedCornerShape(8.dp))
+                    .background(Color(0xFFF9FAFB), RoundedCornerShape(8.dp))
                     .padding(10.dp)
             ) {
-                /*Text(
-                    text = "Others: ${center.otherOfficers}",
-                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = banglaFont),
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(4.dp))*/
                 Text(
                     text = "\uD83D\uDCCD ${center.address}",
-                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = banglaFont),
-                    color = Color.DarkGray
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = banglaFont,
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Normal
+                    ),
+                    color = Color(0xFF4B5563)
                 )
             }
         }
