@@ -22,6 +22,7 @@ class AdminViewModel @Inject constructor(
             presidingOfficerPhone = "",
             otherOfficers = "",
             address = "",
+            union = "",
             booths = "",
             maleVoters = "",
             femaleVoters = "",

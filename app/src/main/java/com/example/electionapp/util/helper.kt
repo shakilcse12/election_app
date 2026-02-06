@@ -11,6 +11,7 @@ fun VoteCenterDto.toEntity(): VoteCenterEntity {
         presidingOfficerPhone = presidingOfficerPhone,
         otherOfficers = otherOfficers,
         address = address,
+        union = union,
         booths = booths,
         voterAreas = voterAreas,
         maleVoters = maleVoters,

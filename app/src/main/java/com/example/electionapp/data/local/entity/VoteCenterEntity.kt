@@ -20,6 +20,7 @@ data class VoteCenterEntity(
     val otherOfficers: String,
 
     val address: String,
+    val union: String,
 
     val booths: String,
     val voterAreas: String,
@@ -42,6 +43,7 @@ data class VoteCenterDto(
     val presidingOfficerPhone: String,
     val otherOfficers: String,
     val address: String,
+    val union: String,
     val booths: String,
     val voterAreas: String,
     val maleVoters: String,

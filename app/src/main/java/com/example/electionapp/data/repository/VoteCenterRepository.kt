@@ -42,7 +42,6 @@ class VoteCenterRepository @Inject constructor(
                         center.centerName.contains(trimmed, ignoreCase = true),
                         center.presidingOfficerName.contains(trimmed, ignoreCase = true),
                         center.address.contains(trimmed, ignoreCase = true),
-                        center.presidingOfficerPhone.contains(trimmed, ignoreCase = true),
                         center.centerNumber.toString().contains(trimmed)
                     ).any { it }
 
@@ -84,7 +83,8 @@ class VoteCenterRepository @Inject constructor(
         return center.copy(
             centerName = center.centerName.trim().replace("\\s+".toRegex(), " "),
             presidingOfficerName = center.presidingOfficerName.trim(),
-            address = center.address.trim()
+            address = center.address.trim(),
+            union = center.union.trim()
         )
     }
 
