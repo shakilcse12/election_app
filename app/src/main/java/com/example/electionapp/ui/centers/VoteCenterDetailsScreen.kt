@@ -1,5 +1,6 @@
 package com.example.electionapp.ui.centers
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -7,28 +8,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.electionapp.data.local.entity.VoteCenterEntity
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -52,29 +47,22 @@ fun VoteCenterDetailsScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Vote Center Details",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    )
-                },
+                title = { Text("Center Profile", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        val activity = context.findActivity()
-                        activity?.onBackPressed()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    IconButton(onClick = { context.findActivity()?.onBackPressed() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    // ✅ STUNNING SHARE BUTTON
+                    center?.let {
+                        IconButton(onClick = { shareCenterDetails(context, it) }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share", tint = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
             )
         },
@@ -84,7 +72,7 @@ fun VoteCenterDetailsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 8.dp), // Original padding
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FilledTonalButton(
@@ -105,7 +93,7 @@ fun VoteCenterDetailsScreen(
 
                     Button(
                         onClick = {
-                            // Using the universal Google Maps link for route preview as discussed before
+                            // Restored original universal Google Maps link
                             val uri = "http://maps.google.com/maps?daddr=${center!!.latitude},${center!!.longitude}"
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
                             intent.setPackage("com.google.android.apps.maps")
@@ -122,252 +110,183 @@ fun VoteCenterDetailsScreen(
         }
     ) { paddingValues ->
         center?.let { it ->
-            val presidingOfficerDisplayName = remember(it.presidingOfficerName) {
-                it.presidingOfficerName
-                    .split(",")
-                    .map { part -> part.trim() }
-                    .take(2)
-                    .joinToString(", ")
-            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(scrollState)
             ) {
-                // Header Section
+                // 1. HERO HEADER (Visual UX)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            shape = MaterialTheme.shapes.medium
+                            brush = Brush.verticalGradient(
+                                listOf(MaterialTheme.colorScheme.primaryContainer, Color.White)
+                            )
                         )
                         .padding(24.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = MaterialTheme.shapes.small,
-                            modifier = Modifier
-                                .clip(MaterialTheme.shapes.small)
-                                .padding(bottom = 12.dp)
-                        ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Surface(color = MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small) {
                             Text(
-                                text = "VC-${it.centerNumber}",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                ),
+                                "CENTER NO: ${it.centerNumber}",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                 color = Color.White,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                fontWeight = FontWeight.Black,
+                                fontSize = 14.sp
                             )
                         }
-
+                        Spacer(Modifier.height(12.dp))
                         Text(
                             text = it.centerName,
-                            style = MaterialTheme.typography.headlineMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
                         )
-
                         Text(
-                            text = "📍 ${String.format("%.6f", it.latitude)}, ${String.format("%.6f", it.longitude)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            text = "Union: ${it.union}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
 
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    InformationCard(
-                        title = "Presiding Officer",
-                        icon = Icons.Default.Person,
-                        iconColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            InfoRow(
-                                icon = Icons.Default.Menu,
-                                label = "Name",
-                                value = presidingOfficerDisplayName,
-                                iconColor = MaterialTheme.colorScheme.primary
-                            )
-                            Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                            InfoRow(
-                                icon = Icons.Default.Phone,
-                                label = "Phone",
-                                value = it.presidingOfficerPhone,
-                                iconColor = MaterialTheme.colorScheme.primary
-                            )
+                    // 2. PERSONNEL SECTION
+                    InformationCard("Election Officers", Icons.Default.Badge, MaterialTheme.colorScheme.primary) {
+                        InfoRow(Icons.Default.Person, "Presiding Officer", it.presidingOfficerName, MaterialTheme.colorScheme.primary)
+                        Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                        InfoRow(Icons.Default.Phone, "Contact Number", it.presidingOfficerPhone, MaterialTheme.colorScheme.primary)
+                        if (it.otherOfficers.isNotBlank()) {
+                            Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                            InfoRow(Icons.Default.Groups, "Support Staff", it.otherOfficers, MaterialTheme.colorScheme.primary)
                         }
                     }
 
-                    if (it.otherOfficers.isNotBlank()) {
-                       /* InformationCard(
-                            title = "Support Staff",
-                            icon = Icons.Default.Person,
-                            iconColor = MaterialTheme.colorScheme.secondary
-                        ) {
-                            Text(
-                                text = it.otherOfficers,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(vertical = 8.dp)
-                            )
-                        }*/
-                    }
-
-                    InformationCard(
-                        title = "Vote Center Location",
-                        icon = Icons.Default.Place,
-                        iconColor = MaterialTheme.colorScheme.tertiary
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Home,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp).padding(top = 2.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = it.address,
-                                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 24.sp),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
+                    // 3. VOTER STATISTICS (Visual Grid)
+                    InformationCard("Voter Statistics", Icons.Default.Analytics, Color(0xFF2E7D32)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            VoterStatBox("Male", it.maleVoters, Icons.Default.Male, Color(0xFF1976D2))
+                            VoterStatBox("Female", it.femaleVoters, Icons.Default.Female, Color(0xFFC2185B))
+                            VoterStatBox("Hijra", it.hijraVoters, Icons.Default.Transgender, Color(0xFF7B1FA2))
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Surface(modifier = Modifier.fillMaxWidth(), color = Color(0xFFE8F5E9), shape = MaterialTheme.shapes.small) {
+                            Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Total Voters", fontWeight = FontWeight.Bold)
+                                Text(it.totalVoters, fontWeight = FontWeight.Black, color = Color(0xFF2E7D32))
+                            }
                         }
                     }
 
-                    // --- NEW: Live OpenStreetMap Preview ---
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        border = CardDefaults.outlinedCardBorder(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp) // Fixed height for map preview
-                    ) {
-                        AndroidView(
-                            factory = { ctx ->
-                                MapView(ctx).apply {
-                                    setTileSource(TileSourceFactory.MAPNIK)
-                                    setMultiTouchControls(true)
-                                    isClickable = true
-
-                                    val point = GeoPoint(it.latitude, it.longitude)
-                                    controller.setZoom(16.5)
-                                    controller.setCenter(point)
-
-                                    val marker = Marker(this)
-                                    marker.position = point
-                                    marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                                    marker.title = it.centerName
-                                    marker.snippet = it.address
-                                    overlays.add(marker)
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    // 4. COVERAGE & INFRASTRUCTURE
+                    InformationCard("Coverage & Infrastructure", Icons.Default.MeetingRoom, MaterialTheme.colorScheme.tertiary) {
+                        InfoRow(Icons.Default.Place, "Voter Areas", it.voterAreas, MaterialTheme.colorScheme.tertiary)
+                        Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                        InfoRow(Icons.Default.TableChart, "Booth Count", it.booths, MaterialTheme.colorScheme.tertiary)
+                        Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                        InfoRow(Icons.Default.HomeWork, "Address", it.address, MaterialTheme.colorScheme.tertiary)
                     }
 
-                    // Static Coordinates Info below map
-                    Text(
-                        text = "Exact Coordinates: ${it.latitude}, ${it.longitude}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                    )
-                }
+                    // 5. TECHNICAL & REMARKS
+                    InformationCard("Additional Info", Icons.Default.Info, Color.Gray) {
+                        InfoRow(Icons.Default.GpsFixed, "Coordinates", "${it.latitude}, ${it.longitude}", Color.Gray)
+                        if (it.remarks.isNotBlank()) {
+                            Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
+                            Text("Remarks:", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                            Text(it.remarks, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
 
-                Spacer(modifier = Modifier.height(100.dp))
-            }
-        } ?: run {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(modifier = Modifier.size(48.dp), strokeWidth = 3.dp)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Loading vote center details...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // 6. MAP PREVIEW
+                    Surface(shape = MaterialTheme.shapes.medium, border = CardDefaults.outlinedCardBorder(), modifier = Modifier.fillMaxWidth().height(200.dp)) {
+                        AndroidView(factory = { ctx ->
+                            MapView(ctx).apply {
+                                setTileSource(TileSourceFactory.MAPNIK)
+                                val point = GeoPoint(it.latitude, it.longitude)
+                                controller.setZoom(17.0)
+                                controller.setCenter(point)
+                                overlays.add(Marker(this).apply { position = point; title = it.centerName })
+                            }
+                        }, modifier = Modifier.fillMaxSize())
+                    }
+
+                    Spacer(Modifier.height(100.dp))
                 }
             }
-        }
+        } ?: LoadingState()
+    }
+}
+
+// ✅ HELPER: SHARE LOGIC
+private fun shareCenterDetails(context: Context, center: VoteCenterEntity) {
+    val text = """
+        🗳️ *Vote Center:* ${center.centerName}
+        🆔 *Center No:* ${center.centerNumber}
+        📍 *Union:* ${center.union}
+        🏠 *Address:* ${center.address}
+        
+        👤 *Officer:* ${center.presidingOfficerName}
+        📞 *Phone:* ${center.presidingOfficerPhone}
+        
+        📊 *Total Voters:* ${center.totalVoters}
+        🗺️ *Map:* https://www.google.com/maps/search/?api=1&query=${center.latitude},${center.longitude}
+    """.trimIndent()
+
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share Center Info"))
+}
+
+@Composable
+private fun VoterStatBox(label: String, value: String, icon: ImageVector, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+        Text(value, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
     }
 }
 
 @Composable
-private fun InformationCard(
-    title: String,
-    icon: ImageVector,
-    iconColor: Color,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    ElevatedCard(
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
-                Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 20.sp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+private fun InformationCard(title: String, icon: ImageVector, iconColor: Color, content: @Composable ColumnScope.() -> Unit) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.elevatedCardColors(containerColor = Color.White)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
-            Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(bottom = 16.dp))
+            Spacer(Modifier.height(16.dp))
             content()
         }
     }
 }
 
 @Composable
-private fun InfoRow(
-    icon: ImageVector, label: String, value: String, iconColor: Color
-) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium, fontSize = 12.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Normal, fontSize = 16.sp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+private fun InfoRow(icon: ImageVector, label: String, value: String, iconColor: Color) {
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(icon, null, tint = iconColor.copy(alpha = 0.6f), modifier = Modifier.size(18.dp).padding(top = 2.dp))
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text(value, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }
 
-fun android.content.Context.findActivity(): android.app.Activity? = when (this) {
+@Composable
+private fun LoadingState() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+// ✅ THE MISSING FUNCTION (Fixes the "Unresolved reference" error)
+fun Context.findActivity(): android.app.Activity? = when (this) {
     is android.app.Activity -> this
     is android.content.ContextWrapper -> baseContext.findActivity()
     else -> null
