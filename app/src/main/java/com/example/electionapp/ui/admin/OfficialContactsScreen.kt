@@ -6,6 +6,7 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,7 +39,7 @@ fun OfficialContactsScreen(
     viewModel: AdminContactsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val focusManager = LocalFocusManager.current // ✅ 1. Get Focus Manager
+    val focusManager = LocalFocusManager.current
     val departments by viewModel.departments.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
@@ -46,7 +47,6 @@ fun OfficialContactsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<ContactPerson?>(null) }
 
-    // Filtering logic
     val filtered = remember(searchQuery, departments) {
         if (searchQuery.isBlank()) departments
         else departments.map { d ->
@@ -58,7 +58,6 @@ fun OfficialContactsScreen(
 
     val totalContacts = remember(filtered) { filtered.sumOf { it.contacts.size } }
 
-    // Dialog state handling
     if (showEditDialog) {
         ContactEditDialog(
             contact = selectedContact,
@@ -102,7 +101,6 @@ fun OfficialContactsScreen(
             }
         }
     ) { padding ->
-        // ✅ 2. Add clickable modifier to clear focus when background is tapped
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,12 +108,10 @@ fun OfficialContactsScreen(
                 .padding(padding)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null // No ripple effect
+                    indication = null
                 ) { focusManager.clearFocus() }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-
-                // 1. Fixed Search Bar
                 Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 2.dp)) {
                     SearchBar(
                         query = searchQuery,
@@ -124,7 +120,6 @@ fun OfficialContactsScreen(
                     )
                 }
 
-                // 2. Animated Count Text
                 AnimatedVisibility(
                     visible = totalContacts > 0,
                     enter = fadeIn() + expandVertically(),
@@ -138,11 +133,10 @@ fun OfficialContactsScreen(
                     )
                 }
 
-                // 3. Main Content Area
                 Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 100.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(filtered, key = { it.title }) { dept ->
@@ -164,7 +158,6 @@ fun OfficialContactsScreen(
                         }
                     }
 
-                    // 4. "No Results Found" State
                     androidx.compose.animation.AnimatedVisibility(
                         visible = totalContacts == 0,
                         enter = fadeIn() + scaleIn(),
@@ -198,21 +191,95 @@ fun OfficialContactsScreen(
         }
     }
 }
+
 @Composable
-fun DepartmentCard(dept: Department, isAdmin: Boolean, onCall: (String) -> Unit, onEdit: (ContactPerson) -> Unit, onDelete: (ContactPerson) -> Unit) {
+fun DepartmentCard(
+    dept: Department,
+    isAdmin: Boolean,
+    onCall: (String) -> Unit,
+    onEdit: (ContactPerson) -> Unit,
+    onDelete: (ContactPerson) -> Unit
+) {
     var expanded by remember { mutableStateOf(true) }
-    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-        Column {
-            Row(modifier = Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(dept.accentColor.copy(0.8f), dept.accentColor))).clickable { expanded = !expanded }.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(dept.icon, null, tint = Color.White)
-                Spacer(Modifier.width(16.dp))
-                Text(dept.title, color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = Color.White)
-            }
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(8.dp)) {
-                    dept.contacts.forEach { person ->
-                        ContactItemRow(person, dept.accentColor, isAdmin, onCall, onEdit, onDelete)
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = Color.White
+        )
+    ) {
+        // ✅ OUTER ROW: Contains the continuous Left Bar and the Main Column
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+
+            // ✅ CONTINUOUS LEFT BAR: Runs from very top to very bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(6.dp)
+                    .background(
+                        color = dept.accentColor,
+                        shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+                    )
+            )
+
+            // MAIN CONTENT COLUMN
+            Column(modifier = Modifier.weight(1f)) {
+
+                // ✅ HEADER: Uses MaterialTheme.colorScheme.surface (Off-White)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background( if (isSystemInDarkTheme())
+                            MaterialTheme.colorScheme.surfaceVariant
+                        else
+                            Color(0xFFF1F6FB))
+                        .clickable { expanded = !expanded }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = dept.icon,
+                        contentDescription = null,
+                        tint = dept.accentColor
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        text = dept.title,
+                        color = dept.accentColor,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = dept.accentColor
+                    )
+                }
+
+                // SUBTLE DIVIDER
+                if (expanded) {
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = dept.accentColor.copy(alpha = 0.1f)
+                    )
+                }
+
+                // ✅ ANIMATED CONTENT: Absolute White
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White)
+                            .padding(8.dp)
+                    ) {
+                        dept.contacts.forEach { person ->
+                            ContactItemRow(person, dept.accentColor, isAdmin, onCall, onEdit, onDelete)
+                        }
                     }
                 }
             }
@@ -221,22 +288,75 @@ fun DepartmentCard(dept: Department, isAdmin: Boolean, onCall: (String) -> Unit,
 }
 
 @Composable
-fun ContactItemRow(person: ContactPerson, accentColor: Color, isAdmin: Boolean, onCall: (String) -> Unit, onEdit: (ContactPerson) -> Unit, onDelete: (ContactPerson) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Surface(Modifier.size(44.dp), CircleShape, accentColor.copy(0.1f)) {
-            Box(contentAlignment = Alignment.Center) { Text(person.name.first().toString(), color = accentColor, fontWeight = FontWeight.Bold) }
+fun ContactItemRow(
+    person: ContactPerson,
+    accentColor: Color,
+    isAdmin: Boolean,
+    onCall: (String) -> Unit,
+    onEdit: (ContactPerson) -> Unit,
+    onDelete: (ContactPerson) -> Unit
+) {
+    // ✅ STYLE RESTORED: Row structure and padding back to original
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier.size(44.dp),
+            shape = CircleShape,
+            color = accentColor.copy(alpha = 0.1f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = person.name.first().toString(),
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(person.name, fontWeight = FontWeight.Bold, color = Color(0xFF2D3436))
-            Text(person.designation, style = MaterialTheme.typography.bodySmall, color = Color(0xFF636E72))
+            Text(
+                text = person.name,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2D3436)
+            )
+            Text(
+                text = person.designation,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF636E72)
+            )
         }
         if (isAdmin) {
-            IconButton(onClick = { onEdit(person) }) { Icon(Icons.Default.Edit, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) }
-            IconButton(onClick = { onDelete(person) }) { Icon(Icons.Default.Delete, null, tint = Color.Red.copy(0.7f), modifier = Modifier.size(20.dp)) }
+            IconButton(onClick = { onEdit(person) }) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = Color.Gray,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            IconButton(onClick = { onDelete(person) }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = Color.Red.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
-        FilledIconButton(onClick = { onCall(person.phoneNumber) }, colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor)) {
-            Icon(Icons.Default.Call, null, tint = Color.White, modifier = Modifier.size(18.dp))
+        FilledIconButton(
+            onClick = { onCall(person.phoneNumber) },
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Call,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
