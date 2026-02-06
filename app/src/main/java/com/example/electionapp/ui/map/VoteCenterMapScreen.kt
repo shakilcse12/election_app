@@ -478,34 +478,50 @@ private fun createCustomMarker(
     context: Context,
     number: String
 ): Drawable {
-    // 2. Check the cache first. Zero breaking changes, massive performance boost.
+
+    // Cache check (unchanged)
     markerIconCache[number]?.let { return it }
 
-    val size = 110
-    // size + 20 to accommodate the pin tail
-    val bitmap = Bitmap.createBitmap(size, size + 20, Bitmap.Config.ARGB_8888)
+    val density = context.resources.displayMetrics.density
+
+    // ---------- RESPONSIVE SIZES ----------
+    val sizeDp = 44f              // logical size (dp)
+    val tailHeightDp = 8f
+    val strokeDp = 2f
+    val textSp = 14f
+
+    val sizePx = (sizeDp * density).toInt()
+    val tailHeightPx = (tailHeightDp * density).toInt()
+    val strokePx = strokeDp * density
+
+    val bitmap = Bitmap.createBitmap(
+        sizePx,
+        sizePx + tailHeightPx,
+        Bitmap.Config.ARGB_8888
+    )
+
     val canvas = Canvas(bitmap)
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    val centerX = size / 2f
-    val centerY = size / 2f
-    val radius = size / 2.2f
+    val centerX = sizePx / 2f
+    val centerY = sizePx / 2f
+    val radius = sizePx / 2.2f
 
     // ---------- COLORS ----------
     val blueDark = Color.parseColor("#1565C0")
     val blueLight = Color.parseColor("#1E88E5")
 
-    // ---------- PIN PATH (TEARDROP) ----------
+    // ---------- PIN PATH ----------
     val pinPath = Path().apply {
         addCircle(centerX, centerY, radius, Path.Direction.CW)
-        // Draw the tail of the pin
-        moveTo(centerX - 16f, centerY + radius - 6f)
-        lineTo(centerX, size.toFloat() + 12f)
-        lineTo(centerX + 16f, centerY + radius - 6f)
+
+        moveTo(centerX - radius / 3f, centerY + radius - strokePx)
+        lineTo(centerX, sizePx + tailHeightPx.toFloat())
+        lineTo(centerX + radius / 3f, centerY + radius - strokePx)
         close()
     }
 
-    // ---------- 1. GRADIENT FILL ----------
+    // ---------- GRADIENT FILL ----------
     paint.style = Paint.Style.FILL
     paint.shader = LinearGradient(
         centerX,
@@ -518,19 +534,19 @@ private fun createCustomMarker(
     )
     canvas.drawPath(pinPath, paint)
 
-    // ---------- 2. WHITE BORDER ----------
+    // ---------- WHITE BORDER ----------
     paint.shader = null
     paint.style = Paint.Style.STROKE
     paint.color = Color.WHITE
-    paint.strokeWidth = 5f
+    paint.strokeWidth = strokePx
     canvas.drawPath(pinPath, paint)
 
-    // ---------- 3. NUMBER TEXT (WHITE) ----------
+    // ---------- TEXT ----------
     paint.style = Paint.Style.FILL
     paint.color = Color.WHITE
-    paint.textSize = 36f
-    paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     paint.textAlign = Paint.Align.CENTER
+    paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+    paint.textSize = textSp * density
 
     val textBounds = Rect()
     paint.getTextBounds(number, 0, number.length, textBounds)
@@ -540,7 +556,7 @@ private fun createCustomMarker(
 
     val drawable = BitmapDrawable(context.resources, bitmap)
 
-    // 3. Store in cache before returning
+    // Cache (unchanged)
     markerIconCache[number] = drawable
     return drawable
 }
