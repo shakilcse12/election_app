@@ -1,5 +1,8 @@
 package com.example.electionapp.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -23,26 +26,29 @@ fun AdminNavGraph(
     ) {
 
         /* ---------------- DASHBOARD (WITH BOTTOM NAV) ---------------- */
+        /* ---------------- DASHBOARD (WITH BOTTOM NAV) ---------------- */
         composable("admin/dashboard") {
             AdminScaffold(
                 selectedIndex = 0,
                 onDashboard = { /* already here */ },
-                onAdd = {
-                    navController.navigate("admin/add")
-                },
-                onLaw = {
-                    navController.navigate("admin/law")
-                },
+                onAdd = { navController.navigate("admin/add") },
+                onLaw = { navController.navigate("admin/law") },
                 topBar = {
                     AdminTopBar(title = "Admin Dashboard", onLogout = onLogout)
                 }
             ) { padding, _ ->
-                VoteCenterListScreen(
-                    modifier = Modifier.padding(padding), // APPLY PADDING HERE
-                    isAdmin = true, // KEY CHANGE
-                    onCenterClick = { id -> mainNavController.navigate("details/$id") },
-                    onEditClick = { id -> navController.navigate("admin/edit/$id") }
-                )
+                // ✅ Apply padding specifically to the content,
+                // and ensure it fills the available size to enable scrolling.
+                Column(modifier = Modifier.fillMaxSize()
+                    .padding(padding)
+                ) {
+                    VoteCenterListScreen(
+                        modifier = Modifier.weight(1f),
+                        isAdmin = true,
+                        onCenterClick ={ id -> mainNavController.navigate("details/$id") },
+                        onEditClick ={ id -> navController.navigate("admin/edit/$id") }
+                    )
+                }
             }
         }
 

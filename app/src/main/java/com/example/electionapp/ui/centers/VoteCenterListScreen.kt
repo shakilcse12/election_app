@@ -50,7 +50,7 @@ fun VoteCenterListScreen(
     val selectedUnions by viewModel.selectedUnions.collectAsState()
     val unionCounts by viewModel.unionCounts.collectAsState()
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    //val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val showButton by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
@@ -104,20 +104,24 @@ fun VoteCenterListScreen(
 
     val focusManager = LocalFocusManager.current // Ensure this is available
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(backgroundGradient)
-            // ✅ ADD THIS: Detects taps on the background to clear focus
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    focusManager.clearFocus()
-                })
-            }
-    ) {
-        Box(modifier = modifier.fillMaxSize().background(backgroundGradient)) {
+    // 1. Only create scroll behavior if NOT admin
+    val scrollBehavior = if (!isAdmin) {
+        TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    } else {
+        null
+    }
+
+    // 2. Conditional modifier for the Scaffold
+    val scaffoldModifier = if (!isAdmin && scrollBehavior != null) {
+        modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+    } else {
+        modifier // In admin mode, we just use the modifier passed from NavGraph
+    }
+
+
             Scaffold(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                modifier = scaffoldModifier // 👈 Apply the modifier (containing weight/fill) here
+                    .background(backgroundGradient), // Move background here
                 containerColor = Color.Transparent,
                 topBar = {
                     // ✅ UPDATED: Transparent Surface with Gradient Column
@@ -125,8 +129,8 @@ fun VoteCenterListScreen(
                         tonalElevation = headerElevation,
                         color = Color.Transparent, // Makes the surface invisible
                     ) {
-                        Column() {
-                            if (!isAdmin) {
+                        Column {
+                            if (!isAdmin && scrollBehavior != null) {
                                 TopAppBar(
                                     scrollBehavior = scrollBehavior,
                                     colors = TopAppBarDefaults.topAppBarColors(
@@ -310,7 +314,10 @@ fun VoteCenterListScreen(
                     }
                 }
             ) { paddingValues ->
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .background(backgroundGradient) // Applied once here
+                    .padding(paddingValues)) {
                     if (voteCenters.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -366,8 +373,7 @@ fun VoteCenterListScreen(
                 }
             }
         }
-    }
-}
+
 
 @Composable
 fun CompactStatItem(icon: ImageVector, label: String, color: Color) {
