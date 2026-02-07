@@ -6,7 +6,6 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,10 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.electionapp.ui.admin.components.ContactEditDialog
 import com.example.electionapp.ui.admin.components.DeleteConfirmationDialog
@@ -74,115 +76,114 @@ fun OfficialContactsScreen(
         )
     }
 
-    val screenBackground = Brush.verticalGradient(
-        colors = listOf(
-            MaterialTheme.colorScheme.surface,
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
-    )
+    // ✅ Use BoxWithConstraints for responsiveness
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.Transparent,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Official Contacts", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+        // Assign to local variables explicitly
+        val horizontalPadding = this.maxWidth * 0.04f
+        val verticalPadding = this.maxHeight * 0.01f
+        val fabPadding = this.maxHeight * 0.09f
+
+        val screenBackground = Brush.verticalGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.surface,
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )
-        },
-        floatingActionButton = {
-            if (isAdmin) {
-                FloatingActionButton(
-                    onClick = { selectedContact = null; showEditDialog = true },
-                    modifier = Modifier.padding(bottom = 72.dp),
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) { Icon(Icons.Default.Add, contentDescription = "Add Official") }
+        )
+
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("Official Contacts", fontWeight = FontWeight.SemiBold) },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
+                )
+            },
+            floatingActionButton = {
+                if (isAdmin) {
+                    FloatingActionButton(
+                        onClick = { selectedContact = null; showEditDialog = true },
+                        modifier = Modifier.padding(bottom = fabPadding),
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) { Icon(Icons.Default.Add, contentDescription = "Add Official") }
+                }
             }
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(screenBackground)
-                .padding(padding)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { focusManager.clearFocus() }
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 2.dp)) {
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChange = { searchQuery = it },
-                        placeholder = "Search by name or rank"
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = totalContacts > 0,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Text(
-                        text = "Showing $totalContacts officials",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp)
-                    )
-                }
-
-                Box(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 100.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(filtered, key = { it.title }) { dept ->
-                            DepartmentCard(
-                                dept = dept,
-                                isAdmin = isAdmin,
-                                onCall = { phone ->
-                                    context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
-                                },
-                                onEdit = { person ->
-                                    selectedContact = person
-                                    showEditDialog = true
-                                },
-                                onDelete = { person ->
-                                    selectedContact = person
-                                    showDeleteDialog = true
-                                }
-                            )
-                        }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(screenBackground)
+                    .padding(padding)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding)) {
+                        SearchBar(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            placeholder = "Search by name or rank"
+                        )
                     }
 
                     androidx.compose.animation.AnimatedVisibility(
-                        visible = totalContacts == 0,
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut(),
-                        modifier = Modifier.align(Alignment.Center)
+                        visible = totalContacts > 0,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp)
+                        Text(
+                            text = "Showing $totalContacts officials",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding)
+                        )
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = horizontalPadding,
+                                end = horizontalPadding,
+                                top = verticalPadding,
+                                bottom = fabPadding
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.SearchOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                text = "No officials found for \"$searchQuery\"",
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            TextButton(onClick = { searchQuery = "" }) {
-                                Text("Clear Search")
+                            items(filtered, key = { it.title }) { dept ->
+                                DepartmentCard(
+                                    dept = dept,
+                                    isAdmin = isAdmin,
+                                    onCall = { phone -> context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) },
+                                    onEdit = { person -> selectedContact = person; showEditDialog = true },
+                                    onDelete = { person -> selectedContact = person; showDeleteDialog = true }
+                                )
+                            }
+                        }
+
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = totalContacts == 0,
+                            enter = fadeIn() + scaleIn(),
+                            exit = fadeOut() + scaleOut(),
+                            modifier = Modifier.align(Alignment.Center)
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(horizontal = horizontalPadding * 2)) {
+                                Icon(
+                                    imageVector = Icons.Default.SearchOff,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(this@BoxWithConstraints.maxWidth * 0.15f),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                )
+                                Spacer(Modifier.height(verticalPadding * 3))
+                                Text(
+                                    text = "No officials found for \"$searchQuery\"",
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                TextButton(onClick = { searchQuery = "" }) {
+                                    Text("Clear Search")
+                                }
                             }
                         }
                     }
@@ -190,6 +191,7 @@ fun OfficialContactsScreen(
             }
         }
     }
+
 }
 
 @Composable
@@ -202,70 +204,60 @@ fun DepartmentCard(
 ) {
     var expanded by remember { mutableStateOf(true) }
 
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = Color.White
-        )
-    ) {
-        // ✅ OUTER ROW: Contains the continuous Left Bar and the Main Column
-        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val density = LocalDensity.current
+        val iconSize = maxWidth * 0.06f
+        val circleSize = maxWidth * 0.11f
+        val spacing = maxWidth * 0.03f
+        val fontSizeTitle = with(LocalDensity.current) { (maxWidth * 0.045f).toSp() }
+        val fontSizeContactName = with(LocalDensity.current) { (maxWidth * 0.04f).toSp() }
+        val fontSizeDesignation = with(LocalDensity.current) { (maxWidth * 0.035f).toSp() }
+        val buttonSize = maxWidth * 0.08f
 
-            // ✅ CONTINUOUS LEFT BAR: Runs from very top to very bottom
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(6.dp)
-                    .background(
-                        color = dept.accentColor,
-                        shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
-                    )
-            )
-
-            // MAIN CONTENT COLUMN
-            Column(modifier = Modifier.weight(1f)) {
-
-                // ✅ HEADER: Uses MaterialTheme.colorScheme.surface (Off-White)
+        ElevatedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // HEADER
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background( if (isSystemInDarkTheme())
-                            MaterialTheme.colorScheme.surfaceVariant
-                        else
-                            Color(0xFFF1F6FB))
+                        .background(dept.accentColor)
                         .clickable { expanded = !expanded }
-                        .padding(16.dp),
+                        .padding(horizontal = spacing, vertical = spacing),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = dept.icon,
                         contentDescription = null,
-                        tint = dept.accentColor
+                        tint = Color.White,
+                        modifier = Modifier.size(iconSize)
                     )
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(spacing))
                     Text(
                         text = dept.title,
-                        color = dept.accentColor,
-                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = fontSizeTitle,
                         modifier = Modifier.weight(1f)
                     )
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = null,
-                        tint = dept.accentColor
+                        tint = Color.White,
+                        modifier = Modifier.size(iconSize)
                     )
                 }
 
-                // SUBTLE DIVIDER
                 if (expanded) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
-                        color = dept.accentColor.copy(alpha = 0.1f)
+                        color = Color.LightGray.copy(alpha = 0.3f)
                     )
                 }
 
-                // ✅ ANIMATED CONTENT: Absolute White
                 AnimatedVisibility(
                     visible = expanded,
                     enter = expandVertically() + fadeIn(),
@@ -275,10 +267,21 @@ fun DepartmentCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color.White)
-                            .padding(8.dp)
+                            .padding(horizontal = spacing, vertical = spacing / 2)
                     ) {
                         dept.contacts.forEach { person ->
-                            ContactItemRow(person, dept.accentColor, isAdmin, onCall, onEdit, onDelete)
+                            ContactItemRow(
+                                person = person,
+                                accentColor = dept.accentColor,
+                                isAdmin = isAdmin,
+                                onCall = onCall,
+                                onEdit = onEdit,
+                                onDelete = onDelete,
+                                circleSize = circleSize,
+                                fontSizeName = fontSizeContactName,
+                                fontSizeDesignation = fontSizeDesignation,
+                                buttonSize = buttonSize
+                            )
                         }
                     }
                 }
@@ -294,17 +297,20 @@ fun ContactItemRow(
     isAdmin: Boolean,
     onCall: (String) -> Unit,
     onEdit: (ContactPerson) -> Unit,
-    onDelete: (ContactPerson) -> Unit
+    onDelete: (ContactPerson) -> Unit,
+    circleSize: Dp,
+    fontSizeName: androidx.compose.ui.unit.TextUnit,
+    fontSizeDesignation: androidx.compose.ui.unit.TextUnit,
+    buttonSize: Dp
 ) {
-    // ✅ STYLE RESTORED: Row structure and padding back to original
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier.size(44.dp),
+            modifier = Modifier.size(circleSize),
             shape = CircleShape,
             color = accentColor.copy(alpha = 0.1f)
         ) {
@@ -312,51 +318,59 @@ fun ContactItemRow(
                 Text(
                     text = person.name.first().toString(),
                     color = accentColor,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = fontSizeName
                 )
             }
         }
-        Spacer(Modifier.width(12.dp))
+
+        Spacer(Modifier.width(circleSize * 0.25f))
+
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = person.name,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF2D3436)
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2D3436),
+                fontSize = fontSizeName
             )
             Text(
                 text = person.designation,
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF636E72)
+                color = Color(0xFF636E72),
+                fontSize = fontSizeDesignation
             )
         }
+
         if (isAdmin) {
-            IconButton(onClick = { onEdit(person) }) {
+            IconButton(onClick = { onEdit(person) }, modifier = Modifier.size(buttonSize)) {
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = null,
                     tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(buttonSize * 0.5f)
                 )
             }
-            IconButton(onClick = { onDelete(person) }) {
+            IconButton(onClick = { onDelete(person) }, modifier = Modifier.size(buttonSize)) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = null,
                     tint = Color.Red.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(buttonSize * 0.5f)
                 )
             }
         }
+
         FilledIconButton(
             onClick = { onCall(person.phoneNumber) },
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor)
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor),
+            modifier = Modifier.size(buttonSize)
         ) {
             Icon(
                 imageVector = Icons.Default.Call,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(buttonSize * 0.55f)
             )
         }
     }
 }
+

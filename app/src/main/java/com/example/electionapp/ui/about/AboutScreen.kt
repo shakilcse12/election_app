@@ -1,6 +1,7 @@
 package com.example.electionapp.ui.about
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -46,7 +47,13 @@ fun AboutScreen() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(backgroundGradient)
+                .then(
+                    if (isSystemInDarkTheme()) {
+                        Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                    } else {
+                        Modifier.background(backgroundGradient)
+                    }
+                )
                 .padding(padding)
         ) {
             LazyColumn(
