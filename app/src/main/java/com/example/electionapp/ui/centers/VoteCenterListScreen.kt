@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.electionapp.ui.components.ElevatedSearchBar
 import com.example.electionapp.ui.components.SearchBar
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -69,17 +70,17 @@ fun VoteCenterListScreen(
         listOf(Color(0xFFF8F9FA), Color(0xFFE9ECEF))
     )
 
-    //val listState = rememberLazyListState()
-    /*val isScrolled by remember {
-        derivedStateOf { listState.firstVisibleItemIndex > 0 }
-    }*/
-
     val headerElevation by animateDpAsState(
         targetValue = if (showButton) 3.dp else 0.dp,
         label = "HeaderElevation"
     )
 
-
+    val searchBarElevated by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 ||
+                    listState.firstVisibleItemScrollOffset > 8
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize().background(backgroundGradient)) {
         Scaffold(
@@ -124,22 +125,15 @@ fun VoteCenterListScreen(
                                 }
                             )
                         }
-
                         // 1. Search Bar
                         Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                tonalElevation = 1.dp,
-                                color = MaterialTheme.colorScheme.surface
-                            ) {
-                                SearchBar(
-                                    query = searchQuery,
-                                    onQueryChange = { viewModel.onSearchChange(it) },
-                                    placeholder = "Search centers..."
-                                    )
-                            }
+                            ElevatedSearchBar(
+                                query = searchQuery,
+                                onQueryChange = { viewModel.onSearchChange(it) },
+                                placeholder = "Search centers...",
+                                elevated = searchBarElevated // Logic controlled by your scroll state
+                            )
                         }
-
                         // 2. Chip Row
                         Row(
                             modifier = Modifier
