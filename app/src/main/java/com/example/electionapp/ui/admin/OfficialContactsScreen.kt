@@ -32,6 +32,7 @@ import com.example.electionapp.ui.admin.components.ContactEditDialog
 import com.example.electionapp.ui.admin.components.DeleteConfirmationDialog
 import com.example.electionapp.ui.admin.model.ContactPerson
 import com.example.electionapp.ui.admin.model.Department
+import com.example.electionapp.ui.components.ElevatedSearchBar
 import com.example.electionapp.ui.components.SearchBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,6 +77,9 @@ fun OfficialContactsScreen(
         )
     }
 
+    // ✅ ADD THIS LINE to search history
+    val history by viewModel.searchHistory.collectAsState()
+
     // ✅ Use BoxWithConstraints for responsiveness
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
@@ -119,12 +123,25 @@ fun OfficialContactsScreen(
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Box(modifier = Modifier.padding(horizontal = horizontalPadding, vertical = verticalPadding)) {
-                        SearchBar(
-                            query = searchQuery,
-                            onQueryChange = { searchQuery = it },
-                            placeholder = "Search by name or rank"
-                        )
+                        // Updated SearchBar call:
+                            ElevatedSearchBar(
+                                query = searchQuery,
+                                onQueryChange = { searchQuery = it }, // ✅ Correct for local 'var' state
+                                placeholder = "Search by name or rank",
+                                elevated = false, // ✅ Fixed: searchBarElevated doesn't exist here
+                                history = history,
+                                onSearchExecuted = {
+                                    viewModel.addToHistory(it)
+                                    focusManager.clearFocus()
+                                },
+                                onDeleteHistoryItem = { viewModel.removeFromHistory(it) },
+                                onHistoryItemClick = {
+                                    searchQuery = it
+                                    focusManager.clearFocus()
+                                }
+                            )
                     }
+
 
                     androidx.compose.animation.AnimatedVisibility(
                         visible = totalContacts > 0,

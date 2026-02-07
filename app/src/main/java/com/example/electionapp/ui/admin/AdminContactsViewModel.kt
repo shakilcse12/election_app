@@ -24,7 +24,9 @@ class AdminContactsViewModel @Inject constructor(
     private val dao: OfficialContactDao
 ) : ViewModel() {
 
-
+    // ✅ State for Search History
+    private val _searchHistory = MutableStateFlow<List<String>>(emptyList())
+    val searchHistory: StateFlow<List<String>> = _searchHistory.asStateFlow()
 
     // Maps database entities to UI models including the unique ID
     val departments: StateFlow<List<Department>> =
@@ -62,6 +64,22 @@ class AdminContactsViewModel @Inject constructor(
         }
     }
 
+    // ✅ Add item to history (call this when search is executed)
+    fun addToHistory(query: String) {
+        if (query.isBlank()) return
+        _searchHistory.update { currentList ->
+            // Put newest at top, keep unique, limit to 5 items
+            (listOf(query.trim()) + currentList).distinct().take(5)
+        }
+    }
+
+    // ✅ Remove specific item from history
+    fun removeFromHistory(query: String) {
+        _searchHistory.update { current ->
+            current.filterNot { it == query }
+        }
+    }
+
     init {
         seedIfEmpty()
     }
@@ -74,6 +92,7 @@ class AdminContactsViewModel @Inject constructor(
             }
         }
     }
+
 }
 
 

@@ -82,6 +82,9 @@ fun VoteCenterListScreen(
         }
     }
 
+    // for search history
+    val history by viewModel.searchHistory.collectAsState()
+
     Box(modifier = modifier.fillMaxSize().background(backgroundGradient)) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -126,12 +129,17 @@ fun VoteCenterListScreen(
                             )
                         }
                         // 1. Search Bar
+                        // 1. Search Bar
                         Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) {
                             ElevatedSearchBar(
-                                query = searchQuery,
-                                onQueryChange = { viewModel.onSearchChange(it) },
+                                query = searchQuery, // This is fine (reading the val)
+                                onQueryChange = { viewModel.onSearchChange(it) }, // ✅ FIXED: Call viewModel instead of reassigning val
                                 placeholder = "Search centers...",
-                                elevated = searchBarElevated // Logic controlled by your scroll state
+                                elevated = searchBarElevated, // ✅ FIXED: Match the variable name defined on line 85
+                                history = history,
+                                onSearchExecuted = { viewModel.addToHistory(it) },
+                                onDeleteHistoryItem = { viewModel.removeFromHistory(it) },
+                                onHistoryItemClick = { viewModel.onSearchChange(it) } // ✅ FIXED: Call viewModel here too
                             )
                         }
                         // 2. Chip Row

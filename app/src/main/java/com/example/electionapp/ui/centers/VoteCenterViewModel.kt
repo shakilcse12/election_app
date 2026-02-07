@@ -16,6 +16,10 @@ class VoteCenterViewModel @Inject constructor(
     internal val repository: VoteCenterRepository
 ) : ViewModel() {
 
+    // 1. Private state for history
+    private val _searchHistory = MutableStateFlow(listOf("56", "সখিপুর"))
+    val searchHistory = _searchHistory.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
@@ -99,6 +103,21 @@ class VoteCenterViewModel @Inject constructor(
         viewModelScope.launch {
             _selectedCenter.value = repository.getById(id)
         }
+    }
+
+    // search history
+    // 2. Add to history (Call this when user presses "Search" on keyboard)
+    fun addToHistory(query: String) {
+        if (query.isBlank()) return
+        _searchHistory.update { currentList ->
+            // Keep it unique and put the newest at the top
+            (listOf(query) + currentList).distinct().take(5)
+        }
+    }
+
+    // 3. Remove from history (For the delete icon)
+    fun removeFromHistory(query: String) {
+        _searchHistory.update { it.filterNot { item -> item == query } }
     }
 
     // --- Admin/Debug Actions ---
