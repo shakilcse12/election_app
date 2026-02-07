@@ -1,8 +1,11 @@
 // File: VoteCenterListScreen.kt
 package com.example.electionapp.ui.centers
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +23,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,72 +90,113 @@ fun VoteCenterListScreen(
     // for search history
     val history by viewModel.searchHistory.collectAsState()
 
-    Box(modifier = modifier.fillMaxSize().background(backgroundGradient)) {
-        Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            containerColor = Color.Transparent,
-            topBar = {
-                // ✅ UPDATED: Transparent Surface with Gradient Column
-                Surface(
-                    tonalElevation = headerElevation,
-                    color = Color.Transparent, // Makes the surface invisible
-                ) {
-                    Column() {
-                        if (!isAdmin) {
-                            TopAppBar(
-                                scrollBehavior = scrollBehavior,
-                                colors = TopAppBarDefaults.topAppBarColors(
-                                    containerColor = Color.Transparent,
-                                    scrolledContainerColor = Color.Transparent
-                                ),
-                                title = { Text("Vote Centers", fontWeight = FontWeight.ExtraBold) },
-                                actions = {
-                                    Box {
-                                        IconButton(onClick = { mDisplayMenu = true }) {
-                                            Icon(Icons.Default.MoreVert, "Menu")
-                                        }
-                                        DropdownMenu(
-                                            expanded = mDisplayMenu,
-                                            onDismissRequest = { mDisplayMenu = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Admin Login") },
-                                                onClick = {
-                                                    mDisplayMenu = false
-                                                    onAdminLoginClick?.invoke()
-                                                },
-                                                leadingIcon = {
-                                                    Icon(Icons.Default.AdminPanelSettings, null, modifier = Modifier.size(18.dp))
-                                                }
-                                            )
+    // 3. Stats Bar
+    // We use the searchBarElevated boolean to drive the stats bar animation too
+    val statsBorderThickness by animateDpAsState(
+        targetValue = if (searchBarElevated) 1.dp else 0.dp,
+        label = "StatsBarBorderThickness"
+    )
+
+    val statsBackgroundColor by animateColorAsState(
+        targetValue = if (searchBarElevated) Color.White else Color(0xFFFCFCFC),
+        label = "StatsBarBackgroundColor"
+    )
+
+    val focusManager = LocalFocusManager.current // Ensure this is available
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(backgroundGradient)
+            // ✅ ADD THIS: Detects taps on the background to clear focus
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                })
+            }
+    ) {
+        Box(modifier = modifier.fillMaxSize().background(backgroundGradient)) {
+            Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                containerColor = Color.Transparent,
+                topBar = {
+                    // ✅ UPDATED: Transparent Surface with Gradient Column
+                    Surface(
+                        tonalElevation = headerElevation,
+                        color = Color.Transparent, // Makes the surface invisible
+                    ) {
+                        Column() {
+                            if (!isAdmin) {
+                                TopAppBar(
+                                    scrollBehavior = scrollBehavior,
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = Color.Transparent,
+                                        scrolledContainerColor = Color.Transparent
+                                    ),
+                                    title = {
+                                        Text(
+                                            "Vote Centers",
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    },
+                                    actions = {
+                                        Box {
+                                            IconButton(onClick = { mDisplayMenu = true }) {
+                                                Icon(Icons.Default.MoreVert, "Menu")
+                                            }
+                                            DropdownMenu(
+                                                expanded = mDisplayMenu,
+                                                onDismissRequest = { mDisplayMenu = false }
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text("Admin Login") },
+                                                    onClick = {
+                                                        mDisplayMenu = false
+                                                        onAdminLoginClick?.invoke()
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            Icons.Default.AdminPanelSettings,
+                                                            null,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                            )
-                        }
-                        // 1. Search Bar
-                        // 1. Search Bar
-                        Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) {
-                            ElevatedSearchBar(
-                                query = searchQuery, // This is fine (reading the val)
-                                onQueryChange = { viewModel.onSearchChange(it) }, // ✅ FIXED: Call viewModel instead of reassigning val
-                                placeholder = "Search centers...",
-                                elevated = searchBarElevated, // ✅ FIXED: Match the variable name defined on line 85
-                                history = history,
-                                onSearchExecuted = { viewModel.addToHistory(it) },
-                                onDeleteHistoryItem = { viewModel.removeFromHistory(it) },
-                                onHistoryItemClick = { viewModel.onSearchChange(it) } // ✅ FIXED: Call viewModel here too
-                            )
-                        }
-                        // 2. Chip Row
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                                )
+                            }
+                            // 1. Search Bar
+                            // 1. Search Bar
+                            Box(
+                                modifier = Modifier.padding(
+                                    start = 16.dp,
+                                    end = 16.dp,
+                                    top = 8.dp,
+                                    bottom = 4.dp
+                                )
+                            ) {
+                                ElevatedSearchBar(
+                                    query = searchQuery, // This is fine (reading the val)
+                                    onQueryChange = { viewModel.onSearchChange(it) }, // ✅ FIXED: Call viewModel instead of reassigning val
+                                    placeholder = "Search centers...",
+                                    elevated = searchBarElevated, // ✅ FIXED: Match the variable name defined on line 85
+                                    history = history,
+                                    onSearchExecuted = { viewModel.addToHistory(it) },
+                                    onDeleteHistoryItem = { viewModel.removeFromHistory(it) },
+                                    onHistoryItemClick = { viewModel.onSearchChange(it) } // ✅ FIXED: Call viewModel here too
+                                )
+                            }
+                            // 2. Chip Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 FilterChip(
                                     selected = selectedUnions.isEmpty(),
                                     onClick = { viewModel.clearFilters() },
@@ -163,115 +209,158 @@ fun VoteCenterListScreen(
                                     )
                                 )
 
-                            unionCounts.forEach { (union, count) ->
-                                val isSelected = selectedUnions.contains(union)
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { viewModel.toggleUnion(union) },
-                                    label = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(union)
-                                            Spacer(Modifier.width(6.dp))
-                                            Surface(
-                                                color = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Gray.copy(alpha = 0.1f),
-                                                shape = androidx.compose.foundation.shape.CircleShape
-                                            ) {
-                                                Text(
-                                                    text = count.toString(),
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                    color = if (isSelected) Color.White else Color.Gray
+                                unionCounts.forEach { (union, count) ->
+                                    val isSelected = selectedUnions.contains(union)
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.toggleUnion(union) },
+                                        label = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(union)
+                                                Spacer(Modifier.width(6.dp))
+                                                Surface(
+                                                    color = if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Gray.copy(
+                                                        alpha = 0.1f
+                                                    ),
+                                                    shape = androidx.compose.foundation.shape.CircleShape
+                                                ) {
+                                                    Text(
+                                                        text = count.toString(),
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(
+                                                            horizontal = 6.dp,
+                                                            vertical = 2.dp
+                                                        ),
+                                                        color = if (isSelected) Color.White else Color.Gray
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        leadingIcon = if (isSelected) {
+                                            {
+                                                Icon(
+                                                    Icons.Default.Done,
+                                                    null,
+                                                    modifier = Modifier.size(16.dp)
                                                 )
                                             }
-                                        }
-                                    },
-                                    leadingIcon = if (isSelected) {
-                                        { Icon(Icons.Default.Done, null, modifier = Modifier.size(16.dp)) }
-                                    } else null,
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        containerColor = Color.White,
-                                        labelColor = MaterialTheme.colorScheme.onSurface,
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = Color.White,
-                                        selectedLeadingIconColor = Color.White
-                                    )
+                                        } else null,
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = Color.White,
+                                            labelColor = MaterialTheme.colorScheme.onSurface,
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = Color.White,
+                                            selectedLeadingIconColor = Color.White
+                                        )
 
+                                    )
+                                }
+                            }
+
+                            // 3. Stats Bar
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
+                                    .height(38.dp),
+                                shape = RoundedCornerShape(50),
+                                color = if (searchBarElevated) Color.White else Color(0xFFFCFCFC),
+                                tonalElevation = 2.dp,
+                                border = if (statsBorderThickness > 0.dp)
+                                    BorderStroke(statsBorderThickness, Color.Black)
+                                else null
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    CompactStatItem(
+                                        Icons.Default.LocationOn,
+                                        "$filteredCenterCount Centers",
+                                        MaterialTheme.colorScheme.primary
+                                    )
+                                    VerticalDivider(modifier = Modifier.height(16.dp))
+                                    CompactStatItem(
+                                        Icons.Default.Map,
+                                        "$selectedUnionCount Unions",
+                                        MaterialTheme.colorScheme.tertiary
+                                    )
+                                    VerticalDivider(modifier = Modifier.height(16.dp))
+                                    CompactStatItem(
+                                        Icons.Default.Groups,
+                                        formattedTotalVoters,
+                                        Color(0xFF2E7D32)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (showButton) {
+                        FloatingActionButton(
+                            onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Top")
+                        }
+                    }
+                }
+            ) { paddingValues ->
+                Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                    if (voteCenters.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "No centers found",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Button(
+                                    onClick = { viewModel.clearFilters() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary.copy(
+                                            alpha = 0.1f
+                                        ), contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) { Text("Clear search & filters") }
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 12.dp,
+                                end = 12.dp,
+                                top = 0.dp,      // reduced
+                                bottom = 12.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(items = voteCenters, key = { it.entity.id }) { item ->
+                                VoteCenterCard(
+                                    center = item.entity,
+                                    isAdmin = isAdmin,
+                                    onClick = { onCenterClick(item.entity.id) },
+                                    onEditClick = { onEditClick?.invoke(item.entity.id) }
                                 )
                             }
-                        }
-
-                        // 3. Stats Bar
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
-                                .height(38.dp),
-                            shape = RoundedCornerShape(50),
-                            color = Color(0xFFFCFCFC),
-                            tonalElevation = 2.dp
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                CompactStatItem(Icons.Default.LocationOn, "$filteredCenterCount Centers", MaterialTheme.colorScheme.primary)
-                                VerticalDivider(modifier = Modifier.height(16.dp))
-                                CompactStatItem(Icons.Default.Map, "$selectedUnionCount Unions", MaterialTheme.colorScheme.tertiary)
-                                VerticalDivider(modifier = Modifier.height(16.dp))
-                                CompactStatItem(Icons.Default.Groups, formattedTotalVoters, Color(0xFF2E7D32))
-                            }
-                        }
-                    }
-                }
-            },
-            floatingActionButton = {
-                if (showButton) {
-                    FloatingActionButton(
-                        onClick = { scope.launch { listState.animateScrollToItem(0) } },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
-                    ) {
-                        Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Top")
-                    }
-                }
-            }
-        ) { paddingValues ->
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                if (voteCenters.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.Search, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text("No centers found", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Button(
-                                onClick = { viewModel.clearFilters() },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.primary),
-                                shape = RoundedCornerShape(8.dp)
-                            ) { Text("Clear search & filters") }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 12.dp,
-                            end = 12.dp,
-                            top = 0.dp,      // reduced
-                            bottom = 12.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(items = voteCenters, key = { it.entity.id }) { item ->
-                            VoteCenterCard(
-                                center = item.entity,
-                                isAdmin = isAdmin,
-                                onClick = { onCenterClick(item.entity.id) },
-                                onEditClick = { onEditClick?.invoke(item.entity.id) }
-                            )
                         }
                     }
                 }
