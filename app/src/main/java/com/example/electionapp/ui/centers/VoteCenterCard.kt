@@ -61,7 +61,7 @@ fun VoteCenterCard(
             .padding(horizontal = 8.dp, vertical = 4.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFFFCFCFC))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

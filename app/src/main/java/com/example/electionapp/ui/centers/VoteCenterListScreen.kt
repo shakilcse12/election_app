@@ -68,7 +68,7 @@ fun VoteCenterListScreen(
     }
 
     val headerElevation by animateDpAsState(
-        targetValue = if (showScrollToTop) 3.dp else 0.dp,
+        targetValue = if (showScrollToTop) 8.dp else 0.dp,
         label = "HeaderElevation"
     )
 
@@ -311,14 +311,26 @@ private fun StatsBar(
     voters: String,
     elevated: Boolean
 ) {
+    val elevation by animateDpAsState(
+        targetValue = if (elevated) 6.dp else 2.dp,
+        label = "StatsBarElevation"
+    )
+
+    // Animate the border thickness (optional, but for consistency)
+    val borderThickness by animateDpAsState(
+        targetValue = if (elevated) 1.5.dp else 1.0.dp,
+        label = "StatsBarBorderThickness"
+    )
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(16.dp),
         color = Color.White.copy(alpha = 0.9f),
-        tonalElevation = if (elevated) 2.dp else 0.dp,
-        border = BorderStroke(1.dp, Color(0xFFE5E7EB))
+        tonalElevation = elevation,
+        //shadowElevation = elevation,
+        border = BorderStroke(borderThickness, Color(0xFFE5E7EB))
     ) {
         Row(
             modifier = Modifier

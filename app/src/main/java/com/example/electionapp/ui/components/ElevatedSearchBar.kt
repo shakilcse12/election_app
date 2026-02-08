@@ -24,12 +24,12 @@ fun ElevatedSearchBar(
     onSearchExecuted: (String) -> Unit = {}
 ) {
     val elevation by animateDpAsState(
-        targetValue = if (elevated) 6.dp else 0.dp,
+        targetValue = if (elevated) 6.dp else 2.dp,
         label = "SearchBarElevation"
     )
 
     val borderThickness by animateDpAsState(
-        targetValue = if (elevated) 1.5.dp else 1.dp,
+        targetValue = if (elevated) 1.dp else 1.dp,
         label = "SearchBarBorderThickness"
     )
 
