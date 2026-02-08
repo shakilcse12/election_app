@@ -1,5 +1,6 @@
 package com.example.electionapp.ui.centers
 
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electionapp.data.local.entity.VoteCenterEntity
@@ -9,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 import javax.inject.Inject
 
 @HiltViewModel
@@ -70,6 +72,16 @@ class VoteCenterViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = emptyList()
     )
+
+    // ✅ Fix: Optimized Voter Calculation moved from UI to ViewModel
+    val totalVotersFormatted: StateFlow<String> = voteCenters
+        .map { items ->
+            val total = items.sumOf {
+                it.entity.totalVoters.replace(",", "").toIntOrNull() ?: 0
+            }
+            NumberFormat.getNumberInstance(Locale.US).format(total)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "0")
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
