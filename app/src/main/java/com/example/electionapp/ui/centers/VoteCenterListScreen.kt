@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -263,39 +264,50 @@ fun VoteCenterListScreen(
                             }
 
                             // 3. Stats Bar
+                            // 3. Refined Horizontal Stats Row
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp)
-                                    .height(38.dp),
-                                shape = RoundedCornerShape(50),
-                                color = if (searchBarElevated) Color.White else Color(0xFFFCFCFC),
-                                tonalElevation = 2.dp,
-                                border = if (statsBorderThickness > 0.dp)
-                                    BorderStroke(statsBorderThickness, Color.Black)
-                                else null
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(8.dp), // Sharper, more "list-like" corners
+                                color = Color.White.copy(alpha = 0.9f),
+                                tonalElevation = if (searchBarElevated) 2.dp else 0.dp,
+                                border = BorderStroke(1.dp, Color(0xFFE5E7EB))
                             ) {
                                 Row(
-                                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 10.dp, horizontal = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
-                                    CompactStatItem(
-                                        Icons.Default.LocationOn,
-                                        "$filteredCenterCount Centers",
-                                        MaterialTheme.colorScheme.primary
+                                    SlimStatItem(
+                                        icon = Icons.Default.LocationOn,
+                                        value = filteredCenterCount.toString(),
+                                        label = "CENTERS",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.weight(1f)
                                     )
-                                    VerticalDivider(modifier = Modifier.height(16.dp))
-                                    CompactStatItem(
-                                        Icons.Default.Map,
-                                        "$selectedUnionCount Unions",
-                                        MaterialTheme.colorScheme.tertiary
+
+                                    // Minimalist Divider
+                                    Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFFE5E7EB)))
+
+                                    SlimStatItem(
+                                        icon = Icons.Default.Map,
+                                        value = selectedUnionCount,
+                                        label = "UNIONS",
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.weight(1f)
                                     )
-                                    VerticalDivider(modifier = Modifier.height(16.dp))
-                                    CompactStatItem(
-                                        Icons.Default.Groups,
-                                        formattedTotalVoters,
-                                        Color(0xFF2E7D32)
+
+                                    Box(modifier = Modifier.width(1.dp).height(16.dp).background(Color(0xFFE5E7EB)))
+
+                                    SlimStatItem(
+                                        icon = Icons.Default.Groups,
+                                        value = formattedTotalVoters,
+                                        label = "VOTERS",
+                                        color = Color(0xFF2E7D32),
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
                             }
@@ -376,10 +388,46 @@ fun VoteCenterListScreen(
 
 
 @Composable
-fun CompactStatItem(icon: ImageVector, label: String, color: Color) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = color, modifier = Modifier.size(14.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.sp))
+fun SlimStatItem(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(16.dp) // Small, sharp icon
+        )
+
+        Spacer(modifier = Modifier.width(6.dp))
+
+        Column {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 12.sp,
+                    lineHeight = 14.sp
+                ),
+                color = Color(0xFF1F2937)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 8.sp,
+                    color = Color.Gray,
+                    lineHeight = 10.sp
+                )
+            )
+        }
     }
 }
