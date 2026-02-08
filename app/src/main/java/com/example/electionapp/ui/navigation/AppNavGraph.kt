@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -18,14 +20,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.electionapp.ui.about.AboutScreen
-import com.example.electionapp.ui.admin.LawPlaceholderScreen
 import com.example.electionapp.ui.admin.OfficialContactsScreen
 import com.example.electionapp.ui.auth.AuthViewModel
 import com.example.electionapp.ui.auth.LoginScreen
 import com.example.electionapp.ui.centers.VoteCenterDetailsScreen
 import com.example.electionapp.ui.centers.VoteCenterListScreen
-import com.example.electionapp.ui.law.LawEnforcementScreen
-import com.example.electionapp.ui.map.MapPlaceholderScreen
 import com.example.electionapp.ui.map.VoteCenterMapScreen
 
 @Composable
@@ -60,7 +59,10 @@ fun AppNavGraph(
 
         composable(BottomNavItem.Law.route) {
             //LawPlaceholderScreen()
-            OfficialContactsScreen(isAdmin = false)
+            OfficialContactsScreen(
+                isAdmin = false,
+                scaffoldPadding = PaddingValues(0.dp)
+            )
         }
 
         composable(BottomNavItem.About.route) {

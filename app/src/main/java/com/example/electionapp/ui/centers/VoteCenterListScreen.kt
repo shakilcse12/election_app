@@ -124,7 +124,13 @@ fun VoteCenterListScreen(
 
     Scaffold(
         modifier = scaffoldModifier
-            .background(backgroundGradient),
+            .background(backgroundGradient)// --- ADD THIS MODIFIER ---
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus() // Clears focus from SearchBar
+                    isSearchActive = false    // Closes your custom dropdown
+                })
+            },
         containerColor = Color.Transparent,
         topBar = {
             Surface(

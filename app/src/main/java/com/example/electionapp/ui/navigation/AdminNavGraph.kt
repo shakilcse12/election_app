@@ -1,6 +1,5 @@
 package com.example.electionapp.ui.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -68,7 +67,10 @@ fun AdminNavGraph(
                     AdminTopBar(title = "Contacts", onLogout = onLogout)
                 }
             ) { padding, snackbarHostState ->
-                OfficialContactsScreen(isAdmin = true)
+                OfficialContactsScreen(
+                    isAdmin = true,
+                    scaffoldPadding = padding
+                )
             }
         }
 

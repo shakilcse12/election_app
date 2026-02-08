@@ -40,34 +40,53 @@ import com.example.electionapp.ui.components.ElevatedSearchBar
 @Composable
 fun OfficialContactsScreen(
     isAdmin: Boolean,
+    scaffoldPadding: PaddingValues,
     viewModel: AdminContactsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+
+    /* -------------------- STATE -------------------- */
+
     val departments by viewModel.departments.collectAsState()
-    var searchQuery by remember { mutableStateOf("") }
     val history by viewModel.searchHistory.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var selectedContact by remember { mutableStateOf<ContactPerson?>(null) }
 
-    val filtered = remember(searchQuery, departments) {
-        if (searchQuery.isBlank()) departments
-        else departments.map { d ->
-            d.copy(contacts = d.contacts.filter {
-                it.name.contains(searchQuery, true) || it.designation.contains(searchQuery, true)
-            })
-        }.filter { it.contacts.isNotEmpty() }
+    /* -------------------- FILTER -------------------- */
+
+    val filteredDepartments = remember(searchQuery, departments) {
+        if (searchQuery.isBlank()) {
+            departments
+        } else {
+            departments
+                .map { dept ->
+                    dept.copy(
+                        contacts = dept.contacts.filter {
+                            it.name.contains(searchQuery, true) ||
+                                    it.designation.contains(searchQuery, true)
+                        }
+                    )
+                }
+                .filter { it.contacts.isNotEmpty() }
+        }
     }
 
-    val totalContacts = remember(filtered) { filtered.sumOf { it.contacts.size } }
+    /* -------------------- DIALOGS -------------------- */
 
     if (showEditDialog) {
         ContactEditDialog(
             contact = selectedContact,
             onDismiss = { showEditDialog = false },
-            onConfirm = { viewModel.save(it); showEditDialog = false }
+            onConfirm = {
+                viewModel.save(it)
+                showEditDialog = false
+            }
         )
     }
 
@@ -75,75 +94,136 @@ fun OfficialContactsScreen(
         DeleteConfirmationDialog(
             contact = selectedContact!!,
             onDismiss = { showDeleteDialog = false },
-            onConfirm = { viewModel.delete(selectedContact!!.id); showDeleteDialog = false }
+            onConfirm = {
+                viewModel.delete(selectedContact!!.id)
+                showDeleteDialog = false
+            }
         )
     }
+
+    /* -------------------- LAYOUT -------------------- */
+
+    val bottomInset = scaffoldPadding.calculateBottomPadding()
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
+            .pointerInput(Unit) {
+                detectTapGestures {
+                    focusManager.clearFocus()
+                    isSearchActive = false
+                }
+            }
     ) {
-        // Responsiveness factors
         val horizontalPadding = maxWidth * 0.04f
         val verticalPadding = maxHeight * 0.015f
-        val fabPadding = maxHeight * 0.02f
 
         Scaffold(
+            contentWindowInsets = WindowInsets.systemBars,
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("Official Contacts", fontWeight = FontWeight.Medium) },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    title = {
+                        Text(
+                            text = "Official Contacts",
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 )
             },
             floatingActionButton = {
                 if (isAdmin) {
                     FloatingActionButton(
-                        onClick = { selectedContact = null; showEditDialog = true },
-                        modifier = Modifier.padding(bottom = fabPadding),
+                        onClick = {
+                            selectedContact = null
+                            showEditDialog = true
+                        },
+                        modifier = Modifier.padding(bottom = bottomInset + 16.dp),
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
-                    ) { Icon(Icons.Default.Add, contentDescription = "Add") }
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Contact")
+                    }
                 }
-            }
-        ) { padding ->
+            },
+            floatingActionButtonPosition = FabPosition.End
+        ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(innerPadding)
                     .background(
                         Brush.verticalGradient(
-                            listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            )
                         )
                     )
             ) {
-                // Search Section
-                Box(modifier = Modifier.padding(horizontal = horizontalPadding, vertical = 8.dp)) {
+
+                /* ---------------- SEARCH ---------------- */
+
+                Box(
+                    modifier = Modifier.padding(
+                        horizontal = horizontalPadding,
+                        vertical = 8.dp
+                    )
+                ) {
                     ElevatedSearchBar(
                         query = searchQuery,
                         onQueryChange = { searchQuery = it },
                         placeholder = "Search name or rank...",
                         history = history,
-                        onSearchExecuted = { viewModel.addToHistory(it); focusManager.clearFocus() },
-                        onDeleteHistoryItem = { viewModel.removeFromHistory(it) },
-                        onHistoryItemClick = { searchQuery = it; focusManager.clearFocus() },
-                        elevated = false
+                        elevated = false,
+                        active = isSearchActive,
+                        onActiveChange = { isSearchActive = it },
+                        onSearchExecuted = {
+                            viewModel.addToHistory(it)
+                            focusManager.clearFocus()
+                        },
+                        onDeleteHistoryItem = viewModel::removeFromHistory,
+                        onHistoryItemClick = {
+                            searchQuery = it
+                            focusManager.clearFocus()
+                        }
                     )
                 }
 
-                // List
+                /* ---------------- LIST ---------------- */
+
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = verticalPadding),
+                    modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
+                    contentPadding = PaddingValues(
+                        start = horizontalPadding,
+                        end = horizontalPadding,
+                        top = verticalPadding,
+                        bottom = bottomInset + 80.dp // FAB safety
+                    )
                 ) {
-                    items(filtered, key = { it.title }) { dept ->
+                    items(filteredDepartments, key = { it.title }) { dept ->
                         DepartmentCard(
                             dept = dept,
                             isAdmin = isAdmin,
-                            onCall = { phone -> context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) },
-                            onEdit = { person -> selectedContact = person; showEditDialog = true },
-                            onDelete = { person -> selectedContact = person; showDeleteDialog = true }
+                            onCall = { phone ->
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_DIAL,
+                                        Uri.parse("tel:$phone")
+                                    )
+                                )
+                            },
+                            onEdit = {
+                                selectedContact = it
+                                showEditDialog = true
+                            },
+                            onDelete = {
+                                selectedContact = it
+                                showDeleteDialog = true
+                            }
                         )
                     }
                 }
@@ -164,22 +244,31 @@ fun DepartmentCard(
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val density = LocalDensity.current
-        val resWidth = maxWidth.coerceAtMost(600.dp) // Cap width logic
+        val maxWidthDp = maxWidth.coerceAtMost(600.dp)
 
-        // Responsive Calculations
-        val iconSize = (resWidth * 0.055f).coerceAtLeast(20.dp)
-        val circleSize = resWidth * 0.11f
-        val fontSizeTitle = with(density) { (resWidth * 0.042f).toSp().coerceAtMost(18.sp) }
-        val fontSizeName = with(density) { (resWidth * 0.038f).toSp().coerceAtMost(16.sp) }
-        val fontSizeDesignation = with(density) { (resWidth * 0.032f).toSp().coerceAtMost(13.sp) }
-        val buttonSize = (resWidth * 0.09f).coerceAtLeast(38.dp)
+        val iconSize = (maxWidthDp * 0.055f).coerceAtLeast(20.dp)
+        val circleSize = maxWidthDp * 0.11f
+        val buttonSize = (maxWidthDp * 0.09f).coerceAtLeast(38.dp)
+
+        val titleFont = with(density) {
+            (maxWidthDp * 0.042f).toSp().coerceAtMost(18.sp)
+        }
+        val nameFont = with(density) {
+            (maxWidthDp * 0.038f).toSp().coerceAtMost(16.sp)
+        }
+        val designationFont = with(density) {
+            (maxWidthDp * 0.032f).toSp().coerceAtMost(13.sp)
+        }
 
         ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.elevatedCardColors(containerColor = Color.White)
         ) {
             Column {
+                // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,13 +279,33 @@ fun DepartmentCard(
                 ) {
                     Icon(dept.icon, null, tint = Color.White, modifier = Modifier.size(iconSize))
                     Spacer(Modifier.width(12.dp))
-                    Text(dept.title, color = Color.White, fontWeight = FontWeight.Medium, fontSize = fontSizeTitle, modifier = Modifier.weight(1f))
-                    Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null, tint = Color.White)
+                    Text(
+                        dept.title,
+                        color = Color.White,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = titleFont,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
                 }
 
-                AnimatedVisibility(visible = expanded) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                        dept.contacts.forEach { person ->
+                if (expanded) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 280.dp) // 👈 prevents infinite expansion
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        userScrollEnabled = dept.contacts.size > 4
+                    ) {
+                        items(
+                            items = dept.contacts,
+                            key = { it.id } // 🔑 stable key
+                        ) { person ->
                             ContactItemRow(
                                 person = person,
                                 accentColor = dept.accentColor,
@@ -205,8 +314,8 @@ fun DepartmentCard(
                                 onEdit = onEdit,
                                 onDelete = onDelete,
                                 circleSize = circleSize,
-                                fontSizeName = fontSizeName,
-                                fontSizeDesignation = fontSizeDesignation,
+                                fontSizeName = nameFont,
+                                fontSizeDesignation = designationFont,
                                 buttonSize = buttonSize
                             )
                         }
@@ -216,6 +325,7 @@ fun DepartmentCard(
         }
     }
 }
+
 
 @Composable
 fun ContactItemRow(
