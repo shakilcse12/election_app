@@ -7,7 +7,7 @@ import com.example.electionapp.data.local.entity.VoteCenterDto
 import com.example.electionapp.data.local.entity.VoteCenterEntity
 import com.example.electionapp.util.normalizeBanglaSafe
 import com.example.electionapp.util.toEntity
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
+import com.google.gson.reflect.TypeToken
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -87,6 +87,9 @@ class VoteCenterRepository @Inject constructor(
 
     suspend fun save(center: VoteCenterEntity) = dao.insert(normalize(center))
 
+    // Increment this number whenever you change the JSON or normalization logic
+    private val CURRENT_DATA_VERSION = 2
+
     private fun normalize(center: VoteCenterEntity): VoteCenterEntity {
         return center.copy(
             centerName = center.centerName
@@ -108,7 +111,36 @@ class VoteCenterRepository @Inject constructor(
         )
     }
 
+    // Atomic Update Logic
     suspend fun seedVoteCentersIfNeeded() {
+        val prefs = context.getSharedPreferences("seed_prefs", Context.MODE_PRIVATE)
+        val lastSeededVersion = prefs.getInt("vote_centers_data_version", 0)
+
+        if (lastSeededVersion >= CURRENT_DATA_VERSION) return
+
+        try {
+            val json = context.assets
+                .open("vote_centers.json")
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
+
+            // CORRECT TYPE TOKEN IMPORT
+            val type = object : TypeToken<List<VoteCenterDto>>() {}.type
+            val dtoList: List<VoteCenterDto> = Gson().fromJson(json, type)
+
+            val normalizedEntities = dtoList.map { normalize(it.toEntity()) }
+
+            // Uses @Transaction internally to prevent partial data states
+            dao.clearAndInsert(normalizedEntities)
+
+            prefs.edit().putInt("vote_centers_data_version", CURRENT_DATA_VERSION).apply()
+            Log.d("REPO", "Data Version updated to $CURRENT_DATA_VERSION")
+        } catch (e: Exception) {
+            Log.e("REPO", "Seeding failed", e)
+        }
+    }
+
+    suspend fun seedVoteCentersIfNeeded2() {
         val prefs = context.getSharedPreferences("seed_prefs", Context.MODE_PRIVATE)
 
         if (prefs.getBoolean("vote_centers_seeded", false)) return

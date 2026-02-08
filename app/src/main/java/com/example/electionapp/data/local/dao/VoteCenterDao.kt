@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.example.electionapp.data.local.entity.VoteCenterEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -42,10 +43,15 @@ interface VoteCenterDao {
 """)
     fun searchCenters(searchTerm: String): Flow<List<VoteCenterEntity>>
 
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(center: VoteCenterEntity)
 
     @Query("SELECT * FROM vote_centers ORDER BY centerNumber ASC")
     fun getAll(): Flow<List<VoteCenterEntity>>
+
+    @Transaction
+    suspend fun clearAndInsert(centers: List<VoteCenterEntity>) {
+        clearAll()
+        insertAll(centers)
+    }
 }
