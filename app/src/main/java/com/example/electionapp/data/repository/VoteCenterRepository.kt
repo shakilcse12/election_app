@@ -27,7 +27,7 @@ class VoteCenterRepository @Inject constructor(
      * the DAO's CAST logic handles it.
      */
     fun getVoteCenters(query: String): Flow<List<VoteCenterEntity>> {
-        val trimmed = query.trim() // Add this line
+        val trimmed = query.trim().normalizeBanglaSafe() // Add this line
         return if (trimmed.isBlank()) {
             dao.getAll()
         } else {
@@ -39,13 +39,21 @@ class VoteCenterRepository @Inject constructor(
 
                 // Filter the results to only include centers that actually match the query
                 val filteredCenters = centers.filter { center ->
-                    val matches = listOf(
-                        center.centerName.contains(trimmed, ignoreCase = true),
-                        center.presidingOfficerName.contains(trimmed, ignoreCase = true),
-                        center.address.contains(trimmed, ignoreCase = true),
-                        center.centerNumber.toString().contains(trimmed)
-                    ).any { it }
+                    // 1. Extract the displayable name once per item
+                    val searchableOfficerName = center.presidingOfficerName
+                        .split(Regex("[,|৷]"))
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .take(2)
+                        .joinToString(", ")
 
+                    // 2. Check all relevant fields
+                    val matches = center.centerName.contains(trimmed) ||
+                            searchableOfficerName.contains(trimmed) ||
+                            center.address.contains(trimmed) ||
+                            center.centerNumber.toString().contains(trimmed)
+
+                    //matches
                     if (matches) {
                         Log.d("REPOSITORY_DEBUG",
                             "✓ Center #${center.centerNumber}: ${center.centerName} " +
@@ -60,7 +68,6 @@ class VoteCenterRepository @Inject constructor(
                                     "(does NOT match '$trimmed')"
                         )
                     }
-
                     matches
                 }
 
@@ -106,16 +113,25 @@ class VoteCenterRepository @Inject constructor(
 
         if (prefs.getBoolean("vote_centers_seeded", false)) return
 
-        val json = context.assets
-            .open("vote_centers.json")
-            .bufferedReader(Charsets.UTF_8)
-            .use { it.readText() }
+        try {
+            val json = context.assets
+                .open("vote_centers.json")
+                .bufferedReader(Charsets.UTF_8)
+                .use { it.readText() }
 
-        val type = object : TypeToken<List<VoteCenterDto>>() {}.type
-        val dtoList: List<VoteCenterDto> = Gson().fromJson(json, type)
+            val type = object : TypeToken<List<VoteCenterDto>>() {}.type
+            val dtoList: List<VoteCenterDto> = Gson().fromJson(json, type)
 
-        dao.insertAll(dtoList.map { it.toEntity() })
+            // ✅ FIX: Normalize the entities BEFORE inserting them into the database
+            val normalizedEntities = dtoList.map { dto ->
+                normalize(dto.toEntity())
+            }
 
-        prefs.edit().putBoolean("vote_centers_seeded", true).apply()
+            dao.insertAll(normalizedEntities)
+
+            prefs.edit().putBoolean("vote_centers_seeded", true).apply()
+        } catch (e: Exception) {
+            Log.e("REPO", "Seed failed", e)
+        }
     }
 }
