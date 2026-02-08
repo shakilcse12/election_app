@@ -2,10 +2,10 @@ package com.example.electionapp.ui.components
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -15,7 +15,9 @@ fun ElevatedSearchBar(
     onQueryChange: (String) -> Unit,
     placeholder: String,
     elevated: Boolean,
-    // ✅ Add these new parameters with defaults to match SearchBar
+    // NEW: Control the dropdown visibility explicitly
+    active: Boolean = false,
+    onActiveChange: (Boolean) -> Unit = {},
     history: List<String> = emptyList(),
     onHistoryItemClick: (String) -> Unit = {},
     onDeleteHistoryItem: (String) -> Unit = {},
@@ -41,7 +43,7 @@ fun ElevatedSearchBar(
             color = Color.Black
         )
     ) {
-        // ✅ Pass the parameters down to the actual SearchBar
+        // Pass the parameters down to your custom SearchBar
         SearchBar(
             query = query,
             onQueryChange = onQueryChange,
@@ -49,9 +51,9 @@ fun ElevatedSearchBar(
             history = history,
             onHistoryItemClick = onHistoryItemClick,
             onDeleteHistoryItem = onDeleteHistoryItem,
-            onSearchExecuted = onSearchExecuted
+            onSearchExecuted = onSearchExecuted,
+            active = active,           // NEW
+            onActiveChange = onActiveChange // NEW
         )
     }
 }
-
-

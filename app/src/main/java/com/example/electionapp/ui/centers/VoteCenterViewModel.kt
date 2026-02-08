@@ -71,9 +71,13 @@ class VoteCenterViewModel @Inject constructor(
         initialValue = emptyList()
     )
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
+
     init {
         viewModelScope.launch {
             repository.seedVoteCentersIfNeeded()
+            _isLoading.value = false
         }
     }
 

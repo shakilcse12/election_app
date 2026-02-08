@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -40,11 +41,13 @@ fun SearchBar(
     placeholder: String,
     history: List<String>,
     onHistoryItemClick: (String) -> Unit,
-    onDeleteHistoryItem: (String) -> Unit, // New callback
-    onSearchExecuted: (String) -> Unit     // To save to history
+    onDeleteHistoryItem: (String) -> Unit,
+    onSearchExecuted: (String) -> Unit,
+    // --- NEW PARAMETERS ---
+    active: Boolean = false,
+    onActiveChange: (Boolean) -> Unit = {}
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -52,13 +55,18 @@ fun SearchBar(
         BasicTextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth().height(40.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+                // Ensure clicking the field activates the search state
+                .onFocusChanged { if (it.isFocused) onActiveChange(true) },
             interactionSource = interactionSource,
             singleLine = true,
             textStyle = TextStyle(fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = {
-                onSearchExecuted(query) // ✅ Save to history here
+                onSearchExecuted(query)
+                onActiveChange(false) // Collapse dropdown
                 keyboardController?.hide()
                 focusManager.clearFocus()
             }),
@@ -74,7 +82,11 @@ fun SearchBar(
                     leadingIcon = { Icon(Icons.Default.Search, null, Modifier.size(20.dp)) },
                     trailingIcon = {
                         if (query.isNotEmpty()) {
-                            IconButton(onClick = { onQueryChange(""); focusManager.clearFocus() }) {
+                            IconButton(onClick = {
+                                onQueryChange("")
+                                onActiveChange(false) // Collapse dropdown on manual clear
+                                focusManager.clearFocus()
+                            }) {
                                 Icon(Icons.Default.Clear, "Clear", Modifier.size(20.dp))
                             }
                         }
@@ -98,23 +110,29 @@ fun SearchBar(
             }
         )
 
+        // FIXED: Dropdown expanded state is now controlled by 'active'
         DropdownMenu(
-            expanded = isFocused && query.isEmpty() && history.isNotEmpty(),
-            onDismissRequest = { /* focusManager.clearFocus() would hide keyboard, so we keep empty */ },
+            expanded = active && query.isEmpty() && history.isNotEmpty(),
+            onDismissRequest = { onActiveChange(false) },
             modifier = Modifier.fillMaxWidth(0.9f),
             properties = PopupProperties(focusable = false)
         ) {
-            Text("Recent Searches", modifier = Modifier.padding(12.dp), style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+            Text(
+                "Recent Searches",
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.Gray
+            )
             history.forEach { item ->
                 DropdownMenuItem(
                     text = { Text(item) },
                     onClick = {
                         onQueryChange(item)
                         onHistoryItemClick(item)
+                        onActiveChange(false) // Collapse after selection
                         focusManager.clearFocus()
                     },
                     leadingIcon = { Icon(Icons.Default.History, null, Modifier.size(18.dp)) },
-                    // ✅ Add Delete Icon
                     trailingIcon = {
                         IconButton(onClick = { onDeleteHistoryItem(item) }) {
                             Icon(Icons.Default.Close, "Delete", Modifier.size(16.dp), tint = Color.Gray)
