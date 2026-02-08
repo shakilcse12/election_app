@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.electionapp.data.local.dao.VoteCenterDao
 import com.example.electionapp.data.local.entity.VoteCenterDto
 import com.example.electionapp.data.local.entity.VoteCenterEntity
+import com.example.electionapp.util.normalizeBanglaSafe
 import com.example.electionapp.util.toEntity
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.reflect.TypeToken
 import com.google.gson.Gson
@@ -81,10 +82,22 @@ class VoteCenterRepository @Inject constructor(
 
     private fun normalize(center: VoteCenterEntity): VoteCenterEntity {
         return center.copy(
-            centerName = center.centerName.trim().replace("\\s+".toRegex(), " "),
-            presidingOfficerName = center.presidingOfficerName.trim(),
-            address = center.address.trim(),
-            union = center.union.trim()
+            centerName = center.centerName
+                .trim()
+                .normalizeBanglaSafe(),
+
+            presidingOfficerName = center.presidingOfficerName
+                .trim()
+                .normalizeBanglaSafe(),
+
+            address = center.address
+                .trim()
+                .normalizeBanglaSafe(),
+
+            union = center.union
+                .trim()
+                .normalizeBanglaSafe()
+
         )
     }
 
@@ -95,7 +108,7 @@ class VoteCenterRepository @Inject constructor(
 
         val json = context.assets
             .open("vote_centers.json")
-            .bufferedReader()
+            .bufferedReader(Charsets.UTF_8)
             .use { it.readText() }
 
         val type = object : TypeToken<List<VoteCenterDto>>() {}.type

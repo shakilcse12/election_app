@@ -303,9 +303,16 @@ fun VoteCenterMapScreen(
                                 // FIX: Use coroutine to wait for the map to stabilize
                                 coroutineScope.launch {
                                     delay(500) // Wait for animation and clustering to settle
-                                    markerCache[item.entity.id]?.let {
+                                    val marker = markerCache[item.entity.id]
+                                    if (marker != null) {
+                                        // Ensure marker is properly initialized
+                                        if (marker.infoWindow == null) {
+                                            marker.infoWindow = CustomInfoWindow(mapView) {
+                                                openDirections(context, marker.position.latitude, marker.position.longitude)
+                                            }
+                                        }
                                         mapView.invalidate()
-                                        it.showInfoWindow()
+                                        marker.showInfoWindow()
                                     }
                                 }
                             }
@@ -416,51 +423,43 @@ class CustomInfoWindow(private val mapView: MapView, private val onDirectionsCli
     MarkerInfoWindow(org.osmdroid.library.R.layout.bonuspack_bubble, mapView) {
 
     override fun onOpen(item: Any?) {
-        // 1. Manually inflate mView if it's null BEFORE calling super.onOpen
-        if (mView == null) {
-            val inflater = mapView.context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as android.view.LayoutInflater
-            mView = inflater.inflate(org.osmdroid.library.R.layout.bonuspack_bubble, mapView, false)
-        }
-
-        // 2. Now it is safe to call super
+        // 1. super.onOpen(item) must be called FIRST so osmdroid
+        // can handle internal setup and inflate the default layout if needed.
         super.onOpen(item)
 
         val marker = item as? Marker ?: return
 
-        // 3. Use a safe let block to configure the view
-        mView?.let { bubbleView ->
-            bubbleView.isClickable = true
-            bubbleView.background = GradientDrawable().apply {
-                setColor(Color.WHITE)
-                cornerRadius = 32f
-                setStroke(2, Color.LTGRAY)
-            }
+        // 2. Access the inflated view via the property 'view' (or 'mView')
+        val bubbleView = mView ?: return
 
-            val titleView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
-            val descView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
-
-            titleView?.apply {
-                setTextColor(Color.parseColor("#1976D2")) // Highlight Number/Title in Blue
-                text = marker.title
-                setPadding(20, 10, 20, 0)
-            }
-
-            descView?.apply {
-                setTextColor(Color.GRAY)
-                text = "${marker.snippet}\n\n📍 Tap for Directions"
-                setPadding(20, 5, 20, 20)
-            }
-
-            bubbleView.setOnClickListener {
-                onDirectionsClick()
-                close()
-            }
+        // 3. Configure the UI safely
+        bubbleView.isClickable = true
+        bubbleView.background = GradientDrawable().apply {
+            setColor(Color.WHITE)
+            cornerRadius = 32f
+            setStroke(2, Color.LTGRAY)
         }
-    }
 
-    override fun onClose() {
-        super.onClose()
-        // Optional: Clean up if necessary
+        val titleView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_title)
+        val descView = bubbleView.findViewById<TextView>(org.osmdroid.library.R.id.bubble_description)
+
+        titleView?.apply {
+            setTextColor(Color.parseColor("#1976D2"))
+            text = marker.title
+            setPadding(20, 10, 20, 0)
+        }
+
+        descView?.apply {
+            setTextColor(Color.GRAY)
+            text = "${marker.snippet}\n\n📍 Tap for Directions"
+            setPadding(20, 5, 20, 20)
+        }
+
+        // Use the built-in sub-view for the click if the whole bubble isn't responding
+        bubbleView.setOnClickListener {
+            onDirectionsClick()
+            close()
+        }
     }
 }
 
@@ -468,6 +467,20 @@ private fun openDirections(context: Context, lat: Double, lon: Double) {
     val uri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon")
     val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
+}
+
+private fun openDirections2(context: Context, lat: Double, lon: Double) {
+    val gmmIntentUri = Uri.parse("google.navigation:q=$lat,$lon")
+    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+    mapIntent.setPackage("com.google.android.apps.maps") // Forces Google Maps
+
+    if (mapIntent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(mapIntent)
+    } else {
+        // Fallback for browsers
+        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lon"))
+        context.startActivity(browserIntent)
+    }
 }
 
 // --- ADDED: Function to generate custom marker with number ---
