@@ -119,44 +119,154 @@ private fun initialContacts(): List<OfficialContactEntity> = listOf(
     OfficialContactEntity(
         id = 0,
         department = "Bangladesh Army",
-        name = "Col. Kamal Ahmed",
-        designation = "Sector Commander",
-        phoneNumber = "01711000000"
+        name = "Camp Commander",
+        designation = "Major",
+        phoneNumber = "01769332446"
     ),
     OfficialContactEntity(
         id = 0,
         department = "Bangladesh Army",
-        name = "Maj. Rafiqul Islam",
-        designation = "Operations Officer",
-        phoneNumber = "01711111111"
+        name = "Captain Tahmid",
+        designation = "2IC, Army Camp",
+        phoneNumber = "01789317327"
     ),
     OfficialContactEntity(
         id = 0,
-        department = "Bangladesh Police",
-        name = "SP Mahmudullah",
-        designation = "District Superintendent",
-        phoneNumber = "01811000000"
+        department = "Bangladesh Army",
+        name = "ওয়ারেন্ট অফিসার ইউসুফ",
+        designation = "ওয়ারেন্ট অফিসার",
+        phoneNumber = "01717473855"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Army",
+        name = "লেফটেন্যান্ট ফাহিম শাহরিয়ার",
+        designation = "লেফটেন্যান্ট",
+        phoneNumber = "01304757989"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Army",
+        name = "ক্যাপ্টেন ইশতিয়াক হোসেন নাসিফ",
+        designation = "ক্যাপ্টেন",
+        phoneNumber = "01789317327"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Army",
+        name = "লেফটেন্যান্ট পারমিতা",
+        designation = "লেফটেন্যান্ট",
+        phoneNumber = "01728583309"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Army",
+        name = "ক্যাপ্টেন নূর কুতুবুল আলম",
+        designation = "ক্যাপ্টেন",
+        phoneNumber = "01769212639"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Army",
+        name = "ওয়ারেন্ট অফিসার আজহার",
+        designation = "ওয়ারেন্ট অফিসার",
+        phoneNumber = "01726855645"
     ),
     OfficialContactEntity(
         id = 0,
+        department = "Bangladesh Army",
+        name = "মেজর শেখ মোঃ ইশতিয়াক উদ্দিন",
+        designation = "মেজর",
+        phoneNumber = "01763405550"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
         department = "Bangladesh Police",
-        name = "ASP Nusrat Jahan",
-        designation = "HQ Coordinator",
-        phoneNumber = "01811333333"
+        name = "OC Sakhipur",
+        designation = "Officer in Charge",
+        phoneNumber = "01320096521"
     ),
     OfficialContactEntity(
         id = 0,
         department = "Bangladesh Administration",
-        name = "Senior Assistant Commissioner Jamal Haque",
-        designation = "HQ Coordinator",
-        phoneNumber = "01811333355"
+        name = "Md. Abdullah Al Rony",
+        designation = "UNO",
+        phoneNumber = "01762691631"
     ),
     OfficialContactEntity(
         id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব শামসুন নাহার শিলা",
+        designation = "সহকারী কমিশনার (ভূমি) ও এক্সিকিউটিভ ম্যাজিস্ট্রেট",
+        phoneNumber = "0173894559701"
+    ),
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব মোঃ আনোয়ার হোসেন",
+        designation = "প্রধান রাজস্ব কর্মকর্তা",
+        phoneNumber = "01304074961"
+    ),
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব মিজ্ ইশরাত জাহান",
+        designation = "উপসচিব, বিজ্ঞান ও প্রযুক্তি মন্ত্রণালয়",
+        phoneNumber = "01723009358"
+    ),
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব টি, এম, এ, মুকিত",
+        designation = "সহকারী কমিশনার ও এক্সিকিউটিভ ম্যাজিস্ট্রেট",
+        phoneNumber = "01761024660"
+    ),
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব মোহাম্মদ আল আমিন সরকার",
+        designation = "নির্বাহী কর্মকর্তা, জেলা পরিষদ",
+        phoneNumber = "01736555536"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব মো: সাইফুল ইসলাম",
+        designation = "সিনিয়র সহকারী কমিশনার ও এক্সিকিউটিভ ম্যাজিস্ট্রেট",
+        phoneNumber = "01749392851"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Bangladesh Administration",
+        name = "জনাব জাকির হোসেন",
+        designation = "উপসচিব, অর্থবিভাগ",
+        phoneNumber = "01763191898"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
         department = "Border Guard (BGB)",
-        name = "Lt. Col. Tariqul",
-        designation = "Battalion Commander",
-        phoneNumber = "01911000000"
+        name = "নায়েব সুবেদার মোঃ ফরিদ হোসেন",
+        designation = "নায়েব সুবেদার",
+        phoneNumber = "01769613434"
+    ),
+
+    OfficialContactEntity(
+        id = 0,
+        department = "Border Guard (BGB)",
+        name = "হাবিলদার মোঃ শহিদুল ইসলাম",
+        designation = "হাবিলদার",
+        phoneNumber = "01739341879"
     )
+
 )
+
 

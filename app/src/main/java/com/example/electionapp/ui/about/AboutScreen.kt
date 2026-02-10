@@ -60,7 +60,7 @@ fun AboutScreen() {
                 contentPadding = PaddingValues(20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                item {
+               item {
                     AboutMemberCard(
                         role = "Inspiration",
                         name = "Sharifa Hoque",
